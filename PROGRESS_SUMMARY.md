@@ -28,12 +28,100 @@
 - ✅ `lib/ai/embeddings.ts` - Vector embeddings
 - ✅ `lib/ai/rag.ts` - RAG (Retrieval-Augmented Generation) system
 - ✅ `lib/parsers/index.ts` - Document parsers (PDF, DOCX, XLSX, TXT)
-- ✅ `lib/gamification/index.ts` - XP, levels, achievements, streaks
+- ✅ `lib/utils.ts` - cn() helper, formatDate, formatFileSize, formatTime, truncate
 
 #### Configuration Files
 - ✅ `next.config.ts` - Updated with security headers
 - ✅ `app/layout.tsx` - Root layout with Inter font and toast notifications
 - ✅ `app/page.tsx` - Landing page with hero and features
+
+---
+
+## 🎨 Wireframe Analysis
+
+> Analyzed from wireframe plan — February 18, 2026
+
+### Navigation Menu (Sidebar)
+4 primary routes:
+- **Tutor Room** → `/tutor`
+- **Upload Resources** → `/upload`
+- **Notes & Exercises** → `/notes`
+- **Progress Tracker** → `/progress`
+
+---
+
+### Screen 1 — Tutor Room (`/tutor`)
+- **AI Avatar panel** (left): animated avatar with moving lips, speaks responses, user can interrupt mid-speech, real-time voice interaction
+- **Chat panel** (right): scrollable message history, `Ask Question...` text input, `End Session` button
+- **Structured Explanations** drawer/modal: AI-generated formatted breakdowns per topic
+- Microphone (voice) button embedded in input bar
+
+---
+
+### Screen 2 — Resource Management (`/upload`)
+- Upload UI accepting **PDF, TXT, DOCX** files
+- Uploaded resources list with status badges: `Processed` (green) / pending
+- Search bar to filter uploaded resources
+- **Structured Explanations** sub-panel showing which resources the AI has indexed
+- Per-resource delete (×) button
+- Contextual `Ask Question...` + `End Session` bar at the bottom
+
+---
+
+### Screen 3 — Notes & Exercises (`/notes`)
+Split two-column layout:
+
+**Left — Notes:**
+- **Auto Generated Structured Notes**: key concepts, definitions, numbered points, mini-summary — generated from uploaded resources
+- **Resource-Linked Notes**: notes tied to specific source files
+- `→ Generate Lesson Notes` action button
+- Footer: `Save to My Notebook`, `Edit Notes`, `Download as PDF`
+
+**Right — Exercises:**
+- **Type 1: Quick Check Questions** — short-answer / free-text, auto-generated from lesson content, with show/hide answer toggle
+- **Type 2: Guided Practice** — longer-form / code exercises with a `Run` button (live execution)
+- **Multiple choice** question UI with radio options and `Submit`
+- Footer: `Mark Lesson as Complete`, `Retry Exercise`, `Ask Tutor to Explain Again`
+
+---
+
+### Screen 4 — Progress Tracker (`/progress`) — PostgreSQL via Supabase
+- **Topics Covered**: fraction card (e.g. 3/4) + list of covered topics
+- **Sessions Completed**: count + calendar heatmap
+- **Questions Asked**: cumulative count
+- **Next Topic**: AI-suggested next topic with dismiss (×) button
+- **Weekly Activity**: bar chart of daily study sessions
+- Persistent `Ask Question...` + `End Session` bar at bottom
+
+---
+
+### Authentication — Supabase Auth
+- `/signup` — Sign Up form
+- `/login` — Sign In form
+- Middleware-protected routes for all dashboard pages
+
+---
+
+### Backend Data Flow (from wireframe)
+```
+File Upload (PDF / DOC / TXT)
+        ↓
+Node.js + Parser (pdf-parse, mammoth)
+        ↓
+    Chunk Text
+        ↓
+Generate Embeddings (Gemini text-embedding)
+        ↓
+Store Embeddings + Metadata → Supabase (pgvector DB)
+        ↓
+    User Asks Question
+        ↓
+RAG Engine + LLM (Gemini) ← context retrieved from Supabase
+        ↓
+      AI Response → Chat Panel
+        ↓
+User Asks Follow-up / Requests Exercise
+```
 
 ---
 
@@ -54,19 +142,24 @@ Status: Needs user input
 ### Phase 1: Foundation (Immediate Next Steps)
 
 #### A. Environment Setup
-1. Create `.env.local` file with actual credentials
+1. ✅ Created `.env.local` file (fill in actual credentials before running features)
 2. Create `google-credentials.json` file
 3. Test API connections
 
 #### B. UI Components (Priority)
 Create reusable components in `components/ui/`:
-- [ ] `Button.tsx`
-- [ ] `Input.tsx`
-- [ ] `FileUpload.tsx`
-- [ ] `LoadingSkeleton.tsx`
-- [ ] `ErrorMessage.tsx`
-- [ ] `Card.tsx`
-- [ ] `Modal.tsx`
+- ✅ `Button.tsx` — primary, secondary, danger, ghost, outline variants + loading state
+- ✅ `Input.tsx` — label, error, hint, left/right icon support
+- ✅ `FileUpload.tsx` — drag & drop, accepts PDF/TXT/DOCX, size validation
+- ✅ `LoadingSkeleton.tsx` — Skeleton, CardSkeleton, ChatBubbleSkeleton, ListSkeleton
+- ✅ `ErrorMessage.tsx` — error, warning, info, success variants with retry
+- ✅ `Card.tsx` — Card, CardHeader, CardSection
+- ✅ `Modal.tsx` — Escape key close, body scroll lock, backdrop click
+- ✅ `StatusBadge.tsx` — Processed / Processing / Pending / Error
+- ✅ `ChatBubble.tsx` — user and AI variants with typing indicator
+- ✅ `BarChart.tsx` — weekly activity bar chart
+- ✅ `ProgressRing.tsx` — SVG ring with fraction display
+- ✅ `index.ts` — barrel export for all components
 
 #### C. Authentication Pages
 Create in `app/(auth)/`:
@@ -79,34 +172,58 @@ Create in `app/(auth)/`:
 Create in `app/(dashboard)/`:
 - [ ] `app/(dashboard)/layout.tsx` - Protected layout
 - [ ] `app/(dashboard)/page.tsx` - Main dashboard
-- [ ] Navigation component
+- [ ] Sidebar navigation component (Tutor Room / Upload Resources / Notes & Exercises / Progress Tracker)
 - [ ] User profile dropdown
+- [ ] Persistent `Ask Question...` + `End Session` bottom bar (shared across screens)
 
 ### Phase 2: Core Features
 
-#### E. File Upload & Processing
-- [ ] `app/(dashboard)/upload/page.tsx` - Upload UI
+#### E. File Upload & Processing (`/upload`)
+- [ ] `app/(dashboard)/upload/page.tsx` - Upload UI with resource list + search bar
 - [ ] `app/api/documents/upload/route.ts` - Upload handler
 - [ ] `app/api/documents/process/route.ts` - Process & embed documents
-- [ ] Test with all file types (PDF, DOCX, XLSX, TXT)
+- [ ] Processed / Pending status badge per resource
+- [ ] Delete resource button with confirmation
+- [ ] Structured Explanations panel showing indexed resources
+- [ ] Test with all file types (PDF, DOCX, TXT)
 
-#### F. AI Tutoring Interface
-- [ ] `app/(dashboard)/tutor/page.tsx` - Chat interface
-- [ ] `app/api/tutor/chat/route.ts` - Chat endpoint
-- [ ] Message history display
-- [ ] Typing indicators
-- [ ] Streaming responses (optional)
+#### F. AI Tutoring Interface (`/tutor`)
+- [ ] `app/(dashboard)/tutor/page.tsx` - Split layout (avatar left, chat right)
+- [ ] `app/api/tutor/chat/route.ts` - Chat endpoint (RAG-powered)
+- [ ] Scrollable message history with `ChatBubble` components
+- [ ] Typing / thinking indicator
+- [ ] Streaming responses
+- [ ] Structured Explanations drawer/modal triggered by AI response
+- [ ] Voice input button (microphone) in input bar
+- [ ] AI Avatar panel (static image initially; animated later in Phase 3)
+- [ ] `End Session` button with session summary
 
-#### G. Progress Dashboard
+#### G. Notes & Exercises (`/notes`)
+- [ ] `app/(dashboard)/notes/page.tsx` - Two-column layout
+- [ ] `app/api/notes/generate/route.ts` - Auto-generate structured notes from resources
+- [ ] Auto Generated Structured Notes section (key concepts, definitions, mini-summary)
+- [ ] Resource-Linked Notes section (source-attributed notes)
+- [ ] `→ Generate Lesson Notes` button
+- [ ] Save to Notebook / Edit Notes / Download as PDF actions
+- [ ] **Type 1 Exercises**: Quick Check Questions with show/hide answer
+- [ ] **Type 2 Exercises**: Guided Practice with `Run` button
+- [ ] Multiple choice question UI with Submit
+- [ ] `Mark Lesson as Complete` / `Retry Exercise` / `Ask Tutor to Explain Again` footer
+
+#### H. Progress Tracker (`/progress`) — Supabase/PostgreSQL
 - [ ] `app/(dashboard)/progress/page.tsx`
+- [ ] Topics Covered card (fraction + topic list)
+- [ ] Sessions Completed card with calendar heatmap
+- [ ] Questions Asked counter
+- [ ] Next Topic suggestion card with dismiss button
+- [ ] Weekly Activity bar chart
 - [ ] XP progress ring component
 - [ ] Achievement cards
 - [ ] Streak indicator
-- [ ] Stats visualization
 
 ### Phase 3: Advanced Features
 
-#### H. Voice Interaction
+#### I. Voice Interaction
 Note: Requires Google Cloud setup
 - [ ] Voice input component
 - [ ] Audio recording
@@ -114,14 +231,14 @@ Note: Requires Google Cloud setup
 - [ ] `app/api/voice/synthesize/route.ts`
 - [ ] Test with multiple languages
 
-#### I. 3D Avatar (Optional - Complex)
+#### J. 3D Avatar (Optional - Complex)
 - [ ] Ready Player Me integration
 - [ ] Three.js avatar renderer
 - [ ] Emotion system
 - [ ] Lip-sync animation
 - [ ] Mobile fallback (text-only mode)
 
-#### J. Gamification Features
+#### K. Gamification Features
 - [ ] Achievement unlock animations
 - [ ] Level-up celebrations
 - [ ] Daily streak reminders
@@ -129,7 +246,7 @@ Note: Requires Google Cloud setup
 
 ### Phase 4: Database & Deployment
 
-#### K. Supabase Setup
+#### L. Supabase Setup
 Instructions in SETUP_GUIDE.md:
 1. Create Supabase project
 2. Enable pgvector extension
@@ -138,7 +255,7 @@ Instructions in SETUP_GUIDE.md:
 5. Setup storage bucket
 6. Create vector similarity search function
 
-#### L. Testing
+#### M. Testing
 - [ ] Test authentication flow
 - [ ] Test file upload and processing
 - [ ] Test chat functionality
@@ -146,7 +263,7 @@ Instructions in SETUP_GUIDE.md:
 - [ ] Cross-browser testing
 - [ ] Mobile responsiveness testing
 
-#### M. Deployment
+#### N. Deployment
 - [ ] Choose platform (Vercel/Netlify)
 - [ ] Setup environment variables
 - [ ] Configure custom domain
@@ -195,8 +312,21 @@ rimbax-ai-tutor/
 │   ├── (dashboard)/ ⏳ (To be created)
 │   └── api/ ⏳ (To be created)
 ├── components/
-│   └── ui/ ⏳ (To be created)
+│   └── ui/
+│       ├── Button.tsx ✅
+│       ├── Input.tsx ✅
+│       ├── FileUpload.tsx ✅
+│       ├── LoadingSkeleton.tsx ✅
+│       ├── ErrorMessage.tsx ✅
+│       ├── Card.tsx ✅
+│       ├── Modal.tsx ✅
+│       ├── StatusBadge.tsx ✅
+│       ├── ChatBubble.tsx ✅
+│       ├── BarChart.tsx ✅
+│       ├── ProgressRing.tsx ✅
+│       └── index.ts ✅
 ├── lib/
+│   ├── utils.ts ✅
 │   ├── supabase/ ✅
 │   ├── security/ ✅
 │   ├── ai/ ✅
@@ -332,6 +462,6 @@ rimbax-ai-tutor/
 
 ---
 
-**Last Updated**: February 13, 2026
-**Status**: Foundation Complete, Ready for Feature Development
-**Next Milestone**: Authentication & UI Components
+**Last Updated**: February 19, 2026
+**Status**: Phase 1A & 1B Complete — Environment + UI Components Done
+**Next Milestone**: Authentication Pages (Login / Signup) + Dashboard Layout
