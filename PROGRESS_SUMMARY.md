@@ -30,6 +30,34 @@
 - ✅ `lib/parsers/index.ts` - Document parsers (PDF, DOCX, XLSX, TXT)
 - ✅ `lib/utils.ts` - cn() helper, formatDate, formatFileSize, formatTime, truncate
 
+#### UI Components
+- ✅ `components/ui/Button.tsx` - 5 variants, 3 sizes, loading state
+- ✅ `components/ui/Input.tsx` - label, error, hint, left/right icon
+- ✅ `components/ui/FileUpload.tsx` - drag & drop, PDF/TXT/DOCX validation
+- ✅ `components/ui/LoadingSkeleton.tsx` - Skeleton, CardSkeleton, ChatBubbleSkeleton, ListSkeleton
+- ✅ `components/ui/ErrorMessage.tsx` - error/warning/info/success with retry
+- ✅ `components/ui/Card.tsx` - Card, CardHeader, CardSection
+- ✅ `components/ui/Modal.tsx` - Escape close, backdrop click, scroll lock
+- ✅ `components/ui/StatusBadge.tsx` - Processed/Processing/Pending/Error
+- ✅ `components/ui/ChatBubble.tsx` - user and AI variants, typing indicator
+- ✅ `components/ui/BarChart.tsx` - weekly activity bar chart
+- ✅ `components/ui/ProgressRing.tsx` - SVG ring with fraction display
+- ✅ `components/ui/index.ts` - barrel export
+
+#### Authentication Pages
+- ✅ `app/(auth)/layout.tsx` - Centered auth layout
+- ✅ `app/(auth)/login/page.tsx` - Login form shell (Supabase Auth TODO)
+- ✅ `app/(auth)/signup/page.tsx` - Signup form shell (Supabase Auth TODO)
+
+#### Dashboard Layout
+- ✅ `components/dashboard/Sidebar.tsx` - Sidebar with active-link highlighting and user stub
+- ✅ `app/(dashboard)/layout.tsx` - Protected shell: sidebar + top bar + scrollable content
+- ✅ `app/(dashboard)/page.tsx` - Dashboard home with quick-link cards
+- ✅ `app/(dashboard)/tutor/page.tsx` - Placeholder
+- ✅ `app/(dashboard)/upload/page.tsx` - Placeholder
+- ✅ `app/(dashboard)/notes/page.tsx` - Placeholder
+- ✅ `app/(dashboard)/progress/page.tsx` - Placeholder
+
 #### Configuration Files
 - ✅ `next.config.ts` - Updated with security headers
 - ✅ `app/layout.tsx` - Root layout with Inter font and toast notifications
@@ -163,18 +191,19 @@ Create reusable components in `components/ui/`:
 
 #### C. Authentication Pages
 Create in `app/(auth)/`:
-- [ ] `app/(auth)/login/page.tsx`
-- [ ] `app/(auth)/signup/page.tsx`
-- [ ] Implement Supabase Auth
-- [ ] Add protected route middleware
+- ✅ `app/(auth)/layout.tsx` - Centered auth layout
+- ✅ `app/(auth)/login/page.tsx` - Login form shell
+- ✅ `app/(auth)/signup/page.tsx` - Signup form shell
+- [ ] Implement Supabase Auth (deferred — depends on finalized UI design)
+- [ ] Add protected route middleware (deferred — depends on Supabase Auth)
 
 #### D. Dashboard Layout
 Create in `app/(dashboard)/`:
-- [ ] `app/(dashboard)/layout.tsx` - Protected layout
-- [ ] `app/(dashboard)/page.tsx` - Main dashboard
-- [ ] Sidebar navigation component (Tutor Room / Upload Resources / Notes & Exercises / Progress Tracker)
-- [ ] User profile dropdown
-- [ ] Persistent `Ask Question...` + `End Session` bottom bar (shared across screens)
+- ✅ `app/(dashboard)/layout.tsx` - Protected layout (sidebar + top bar)
+- ✅ `app/(dashboard)/page.tsx` - Main dashboard with quick-link cards
+- ✅ `components/dashboard/Sidebar.tsx` - Sidebar with active-link highlighting
+- [ ] User profile dropdown (deferred — depends on Supabase Auth)
+- ✅ Persistent `Ask Question...` + `End Session` bottom bar (added per-screen in Phase 2)
 
 ### Phase 2: Core Features
 
@@ -308,23 +337,34 @@ rimbax-ai-tutor/
 │   ├── layout.tsx ✅
 │   ├── page.tsx ✅ (Landing page)
 │   ├── globals.css ✅
-│   ├── (auth)/ ⏳ (To be created)
-│   ├── (dashboard)/ ⏳ (To be created)
-│   └── api/ ⏳ (To be created)
+│   ├── (auth)/
+│   │   ├── layout.tsx ✅
+│   │   ├── login/page.tsx ✅
+│   │   └── signup/page.tsx ✅
+│   ├── (dashboard)/
+│   │   ├── layout.tsx ✅
+│   │   ├── page.tsx ✅
+│   │   ├── tutor/page.tsx ✅ (placeholder)
+│   │   ├── upload/page.tsx ✅ (placeholder)
+│   │   ├── notes/page.tsx ✅ (placeholder)
+│   │   └── progress/page.tsx ✅ (placeholder)
+│   └── api/ ⏳ (Phase 2)
 ├── components/
-│   └── ui/
-│       ├── Button.tsx ✅
-│       ├── Input.tsx ✅
-│       ├── FileUpload.tsx ✅
-│       ├── LoadingSkeleton.tsx ✅
-│       ├── ErrorMessage.tsx ✅
-│       ├── Card.tsx ✅
-│       ├── Modal.tsx ✅
-│       ├── StatusBadge.tsx ✅
-│       ├── ChatBubble.tsx ✅
-│       ├── BarChart.tsx ✅
-│       ├── ProgressRing.tsx ✅
-│       └── index.ts ✅
+│   ├── ui/
+│   │   ├── Button.tsx ✅
+│   │   ├── Input.tsx ✅
+│   │   ├── FileUpload.tsx ✅
+│   │   ├── LoadingSkeleton.tsx ✅
+│   │   ├── ErrorMessage.tsx ✅
+│   │   ├── Card.tsx ✅
+│   │   ├── Modal.tsx ✅
+│   │   ├── StatusBadge.tsx ✅
+│   │   ├── ChatBubble.tsx ✅
+│   │   ├── BarChart.tsx ✅
+│   │   ├── ProgressRing.tsx ✅
+│   │   └── index.ts ✅
+│   └── dashboard/
+│       └── Sidebar.tsx ✅
 ├── lib/
 │   ├── utils.ts ✅
 │   ├── supabase/ ✅
@@ -463,5 +503,5 @@ rimbax-ai-tutor/
 ---
 
 **Last Updated**: February 19, 2026
-**Status**: Phase 1A & 1B Complete — Environment + UI Components Done
-**Next Milestone**: Authentication Pages (Login / Signup) + Dashboard Layout
+**Status**: Phase 1 Complete — Foundation, UI Components, Auth Shells & Dashboard Layout Done
+**Next Milestone**: Phase 2 — File Upload & Processing (`/upload`)
