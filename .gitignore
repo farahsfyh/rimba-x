@@ -30,11 +30,21 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+!.env.example
+
+# credentials
+google-credentials.json
+
+# temp files
+dev-output.txt
 
 # vercel
 .vercel
+
+# netlify
+.netlify
 
 # typescript
 *.tsbuildinfo
