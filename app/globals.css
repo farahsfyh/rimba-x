@@ -1,26 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  /* Core Brand Colors - Deep Blue Theme extracted from screenshot */
+  /* Core Brand Colors - Deep Blue Theme */
   --color-primary: #3b82f6;
-  /* Modern Blue */
   --color-primary-hover: #2563eb;
-  /* Deeper Blue */
   --color-secondary: #0f172a;
-  /* Deep Navy background */
   --color-accent: #0ea5e9;
-  /* Sky Blue accent */
 
   /* Shared Names */
   --color-muted: #64748b;
-  /* Slate 500 */
   --color-on-dark: #f8fafc;
 
   /* Backgrounds and Surfaces */
   --color-light: #f1f5f9;
-  /* Slate 100 */
   --color-dark: #0f172a;
-  /* Deep Navy */
   --color-surface: #ffffff;
   --color-surface-dark: #1e293b;
 
@@ -29,9 +22,10 @@
   --color-warning: #f59e0b;
   --color-error: #ef4444;
 
-  /* Use the variable from next/font/google defined in layout.tsx */
+  /* Font */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
 
+  /* Shadows */
   --shadow-soft-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
   --shadow-soft-md: 0 4px 16px rgba(0, 0, 0, 0.1);
   --shadow-soft-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
@@ -69,10 +63,47 @@ h6 {
   color: #ffffff !important;
 }
 
+/* Custom utilities */
 .perspective-1000 {
   perspective: 1000px;
 }
 
 .rotate-y-12 {
   transform: rotateY(12deg);
+}
+
+/* Scrollbar styling */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 99px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Selection */
+::selection {
+  background: rgba(59, 130, 246, 0.2);
+  color: #0f172a;
+}
+
+/* Smooth transitions for sidebar */
+.sidebar-transition {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
