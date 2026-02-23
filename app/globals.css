@@ -1,26 +1,78 @@
 @import "tailwindcss";
 
+@theme {
+  /* Core Brand Colors - Deep Blue Theme extracted from screenshot */
+  --color-primary: #3b82f6;
+  /* Modern Blue */
+  --color-primary-hover: #2563eb;
+  /* Deeper Blue */
+  --color-secondary: #0f172a;
+  /* Deep Navy background */
+  --color-accent: #0ea5e9;
+  /* Sky Blue accent */
+
+  /* Shared Names */
+  --color-muted: #64748b;
+  /* Slate 500 */
+  --color-on-dark: #f8fafc;
+
+  /* Backgrounds and Surfaces */
+  --color-light: #f1f5f9;
+  /* Slate 100 */
+  --color-dark: #0f172a;
+  /* Deep Navy */
+  --color-surface: #ffffff;
+  --color-surface-dark: #1e293b;
+
+  /* Status Colors */
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+
+  /* Use the variable from next/font/google defined in layout.tsx */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  --shadow-soft-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-soft-md: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-soft-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #f1f5f9;
+  --foreground: #0f172a;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+  font-family: var(--font-inter), 'Inter', sans-serif;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+/* Fix for dark sections: ensures text-white always works */
+.bg-dark h1,
+.bg-dark h2,
+.bg-dark h3,
+.bg-dark h4,
+.bg-dark h5,
+.bg-dark h6 {
+  color: #ffffff !important;
+}
+
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.rotate-y-12 {
+  transform: rotateY(12deg);
 }

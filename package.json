@@ -20,6 +20,10 @@
     "date-fns": "^4.1.0",
     "express-rate-limit": "^8.2.1",
     "framer-motion": "^12.34.0",
+<<<<<<< HEAD
+=======
+    "lucide-react": "^0.473.0",
+>>>>>>> 567f977 (set up Supabase integration and enhance primary interface)
     "mammoth": "^1.11.0",
     "next": "16.1.6",
     "pdf-parse": "^2.4.5",
@@ -48,4 +52,8 @@
     "tailwindcss": "^4",
     "typescript": "^5"
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> 567f977 (set up Supabase integration and enhance primary interface)

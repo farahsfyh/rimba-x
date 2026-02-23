@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import Link from 'next/link'
 
 const quickLinks = [
@@ -34,4 +35,9 @@ export default function DashboardPage() {
       </div>
     </div>
   )
+=======
+// This folder is deprecated in favor of /app/dashboard/
+export default function Deprecated() {
+  return null;
+>>>>>>> 567f977 (set up Supabase integration and enhance primary interface)
 }
