@@ -1,18 +1,5 @@
 'use client'
 
-<<<<<<< HEAD
-import Link from 'next/link'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-
-export default function SignupPage() {
-  return (
-    <div className="w-full max-w-sm">
-      {/* Logo / Brand */}
-      <div className="mb-8 text-center">
-        <h1 className="text-2xl font-bold text-gray-900">RimbaX</h1>
-        <p className="mt-1 text-sm text-gray-500">Create your account</p>
-=======
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -87,107 +74,65 @@ export default function SignupPage() {
           Rimba<span className="text-primary">X</span>
         </h1>
         <p className="mt-1 text-sm text-text-muted">Create your account</p>
->>>>>>> 567f977 (set up Supabase integration and enhance primary interface)
       </div>
 
       {/* Card */}
       <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-<<<<<<< HEAD
-        <form className="flex flex-col gap-5">
-          <Input
-            label="Full Name"
-=======
         <form className="flex flex-col gap-5" onSubmit={handleSignup}>
           <Input
             label="Full Name"
             name="fullName"
->>>>>>> 567f977 (set up Supabase integration and enhance primary interface)
             type="text"
             placeholder="Your name"
             autoComplete="name"
             required
-<<<<<<< HEAD
-          />
-          <Input
-            label="Email"
-=======
             value={formData.fullName}
             onChange={handleChange}
           />
           <Input
             label="Email"
             name="email"
->>>>>>> 567f977 (set up Supabase integration and enhance primary interface)
             type="email"
             placeholder="you@example.com"
             autoComplete="email"
             required
-<<<<<<< HEAD
-          />
-          <Input
-            label="Password"
-=======
             value={formData.email}
             onChange={handleChange}
           />
           <Input
             label="Password"
             name="password"
->>>>>>> 567f977 (set up Supabase integration and enhance primary interface)
             type="password"
             placeholder="••••••••"
             autoComplete="new-password"
             required
-<<<<<<< HEAD
-          />
-          <Input
-            label="Confirm Password"
-=======
             value={formData.password}
             onChange={handleChange}
           />
           <Input
             label="Confirm Password"
             name="confirmPassword"
->>>>>>> 567f977 (set up Supabase integration and enhance primary interface)
             type="password"
             placeholder="••••••••"
             autoComplete="new-password"
             required
-<<<<<<< HEAD
-          />
-
-          {/* TODO: wire up Supabase Auth */}
-          <Button type="submit" className="w-full">
-=======
             value={formData.confirmPassword}
             onChange={handleChange}
           />
 
           <Button type="submit" className="w-full" loading={loading}>
->>>>>>> 567f977 (set up Supabase integration and enhance primary interface)
             Create Account
           </Button>
         </form>
       </div>
 
       {/* Footer link */}
-<<<<<<< HEAD
-      <p className="mt-5 text-center text-sm text-gray-500">
-        Already have an account?{' '}
-        <Link href="/login" className="text-blue-600 font-medium hover:underline">
-=======
       <p className="mt-5 text-center text-sm text-text-muted">
         Already have an account?{' '}
         <Link href="/login" className="text-primary font-bold hover:underline">
->>>>>>> 567f977 (set up Supabase integration and enhance primary interface)
           Sign in
         </Link>
       </p>
     </div>
   )
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> 567f977 (set up Supabase integration and enhance primary interface)
