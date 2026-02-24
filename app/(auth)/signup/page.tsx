@@ -48,6 +48,8 @@ export default function SignupPage() {
         toast.error(error.message)
       } else {
         if (data.session) {
+          // Initialize user progress/stats rows
+          await fetch('/api/init-user', { method: 'POST', credentials: 'include' }).catch(() => null)
           toast.success('Account created and logged in!')
           router.push('/dashboard')
         } else {

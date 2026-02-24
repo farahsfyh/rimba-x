@@ -34,6 +34,35 @@ export async function middleware(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
+    const SESSION_TIMEOUT_MS = 30 * 60 * 1000 // 30 minutes
+
+    // Check session timeout for authenticated users on protected routes
+    if (user) {
+        const lastActivity = request.cookies.get('last_activity')?.value
+        const now = Date.now()
+
+        if (lastActivity) {
+            const elapsed = now - parseInt(lastActivity, 10)
+            if (elapsed > SESSION_TIMEOUT_MS) {
+                // Session timed out — sign out and redirect to login
+                await supabase.auth.signOut()
+                const url = request.nextUrl.clone()
+                url.pathname = '/login'
+                url.searchParams.set('reason', 'session_expired')
+                const response = NextResponse.redirect(url)
+                response.cookies.delete('last_activity')
+                return response
+            }
+        }
+
+        // Update last activity timestamp on every request
+        supabaseResponse.cookies.set('last_activity', String(now), {
+            httpOnly: true,
+            sameSite: 'lax',
+            maxAge: SESSION_TIMEOUT_MS / 1000,
+        })
+    }
+
     // Protected routes: redirect unauthenticated users to login
     const isProtectedRoute = request.nextUrl.pathname.startsWith('/dashboard')
     if (!user && isProtectedRoute) {

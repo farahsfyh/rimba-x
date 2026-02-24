@@ -28,6 +28,8 @@ export default function LoginPage() {
       if (error) {
         toast.error(error.message)
       } else {
+        // Ensure user progress/stats rows exist (idempotent)
+        await fetch('/api/init-user', { method: 'POST', credentials: 'include' }).catch(() => null)
         toast.success('Logged in successfully!')
         router.push('/dashboard')
         router.refresh()

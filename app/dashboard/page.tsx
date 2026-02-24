@@ -135,7 +135,7 @@ export default function DashboardPage() {
             >
                 <h1 className="text-3xl font-bold text-secondary">
                     {greeting},{' '}
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">
+                    <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-accent">
                         {userName}
                     </span>{' '}
                     👋
@@ -201,7 +201,7 @@ export default function DashboardPage() {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: 0.15 }}
-                className="p-5 rounded-2xl bg-gradient-to-r from-primary/5 to-accent/5 border border-primary/10"
+                className="p-5 rounded-2xl bg-linear-to-r from-primary/5 to-accent/5 border border-primary/10"
             >
                 <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
@@ -219,7 +219,7 @@ export default function DashboardPage() {
                         initial={{ width: 0 }}
                         animate={{ width: `${xpProgress}%` }}
                         transition={{ duration: 1, delay: 0.5 }}
-                        className="h-full bg-gradient-to-r from-primary to-accent rounded-full"
+                        className="h-full bg-linear-to-r from-primary to-accent rounded-full"
                     />
                 </div>
             </motion.div>
@@ -241,7 +241,7 @@ export default function DashboardPage() {
                             >
                                 {/* Gradient top bar */}
                                 <div
-                                    className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
+                                    className={`absolute top-0 left-0 right-0 h-1 bg-linear-to-r ${item.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`}
                                 />
 
                                 <div
@@ -259,7 +259,7 @@ export default function DashboardPage() {
                                     </p>
                                 </div>
 
-                                <div className="mt-4 flex items-center text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-all transform translate-x-[-10px] group-hover:translate-x-0">
+                                <div className="mt-4 flex items-center text-primary text-sm font-semibold opacity-0 group-hover:opacity-100 transition-all transform -translate-x-2.5 group-hover:translate-x-0">
                                     Explore <ArrowRight size={16} className="ml-1" />
                                 </div>
 
@@ -278,7 +278,7 @@ export default function DashboardPage() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: 0.5 }}
-                    className="p-6 rounded-2xl bg-gradient-to-r from-primary to-accent text-white text-center"
+                    className="p-6 rounded-2xl bg-linear-to-r from-primary to-accent text-white text-center"
                 >
                     <Zap size={32} className="mx-auto mb-3 opacity-80" />
                     <h3 className="text-xl font-bold mb-2">Get Started!</h3>

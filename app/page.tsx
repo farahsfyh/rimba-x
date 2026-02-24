@@ -96,7 +96,7 @@ export default function Home() {
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-primary/20">
+            <div className="w-9 h-9 bg-linear-to-br from-primary to-accent rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-primary/20">
               R
             </div>
             <span className="text-2xl font-bold text-secondary tracking-tight">
@@ -127,7 +127,7 @@ export default function Home() {
             {user ? (
               <Link
                 href="/dashboard"
-                className="bg-gradient-to-r from-primary to-primary-hover text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
+                className="bg-linear-to-r from-primary to-primary-hover text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
               >
                 <LayoutDashboard size={18} />
                 Dashboard
@@ -135,7 +135,7 @@ export default function Home() {
             ) : (
               <Link
                 href="/login"
-                className="bg-gradient-to-r from-primary to-primary-hover text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
+                className="bg-linear-to-r from-primary to-primary-hover text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
               >
                 Login
               </Link>
@@ -182,7 +182,7 @@ export default function Home() {
             {user ? (
               <Link
                 href="/dashboard"
-                className="bg-gradient-to-r from-primary to-accent text-white px-5 py-3 rounded-xl font-medium w-full flex items-center justify-center gap-2"
+                className="bg-linear-to-r from-primary to-accent text-white px-5 py-3 rounded-xl font-medium w-full flex items-center justify-center gap-2"
               >
                 <LayoutDashboard size={18} />
                 Dashboard
@@ -190,7 +190,7 @@ export default function Home() {
             ) : (
               <Link
                 href="/login"
-                className="bg-gradient-to-r from-primary to-accent text-white px-5 py-3 rounded-xl font-medium w-full flex items-center justify-center gap-2"
+                className="bg-linear-to-r from-primary to-accent text-white px-5 py-3 rounded-xl font-medium w-full flex items-center justify-center gap-2"
               >
                 Login
               </Link>
@@ -202,7 +202,7 @@ export default function Home() {
       {/* Hero Section */}
       <header className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         {/* Background Decorative Elements */}
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-bl from-primary/5 to-transparent -z-10 rounded-bl-[100px]" />
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-linear-to-bl from-primary/5 to-transparent -z-10 rounded-bl-[100px]" />
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-accent/5 rounded-full blur-3xl -z-10" />
         <div className="absolute top-32 right-20 w-64 h-64 bg-primary/3 rounded-full blur-2xl -z-10 animate-pulse" />
 
@@ -213,14 +213,14 @@ export default function Home() {
             transition={{ duration: 0.5 }}
             className="text-center lg:text-left space-y-8"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 text-primary text-sm font-semibold border border-primary/20">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-linear-to-r from-primary/10 to-accent/10 text-primary text-sm font-semibold border border-primary/20">
               <Sparkles size={14} />
               <span>AI-Powered Learning Revolution</span>
             </div>
 
             <h1 className="text-5xl lg:text-6xl font-bold leading-tight text-secondary">
               Your Personal AI Tutor, <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent relative inline-block">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-primary to-accent relative inline-block">
                 Completely Free
                 <svg
                   className="absolute w-full h-3 -bottom-1 left-0 text-accent/30"
@@ -247,7 +247,7 @@ export default function Home() {
               {user ? (
                 <Link
                   href="/dashboard"
-                  className="bg-gradient-to-r from-primary to-primary-hover text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-1 flex items-center justify-center gap-2"
+                  className="bg-linear-to-r from-primary to-primary-hover text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-1 flex items-center justify-center gap-2"
                 >
                   Go to Dashboard
                   <ArrowRight size={20} />
@@ -255,7 +255,7 @@ export default function Home() {
               ) : (
                 <Link
                   href="/signup"
-                  className="bg-gradient-to-r from-primary to-primary-hover text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-1 flex items-center justify-center gap-2"
+                  className="bg-linear-to-r from-primary to-primary-hover text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-1 flex items-center justify-center gap-2"
                 >
                   Start Learning Free
                   <ArrowRight size={20} />
@@ -299,7 +299,7 @@ export default function Home() {
                 <div className="w-3 h-3 rounded-full bg-yellow-500" />
                 <div className="w-3 h-3 rounded-full bg-green-500" />
                 <div className="ml-4 flex items-center gap-2">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-[10px] text-white font-bold">
+                  <div className="w-6 h-6 rounded-full bg-linear-to-br from-primary to-accent flex items-center justify-center text-[10px] text-white font-bold">
                     AI
                   </div>
                   <span className="text-gray-300 text-sm font-medium">
@@ -313,7 +313,7 @@ export default function Home() {
               <div className="p-6 space-y-4 h-[400px] bg-[#1E1E1E]">
                 {/* AI Message */}
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex-shrink-0 flex items-center justify-center text-white mt-1">
+                  <div className="w-8 h-8 rounded-full bg-linear-to-br from-primary to-accent shrink-0 flex items-center justify-center text-white mt-1">
                     <Brain size={16} />
                   </div>
                   <div className="bg-[#2D2D2D] p-4 rounded-2xl rounded-tl-none text-gray-200 text-sm shadow-sm max-w-[85%] border border-gray-700">
@@ -333,14 +333,14 @@ export default function Home() {
                       understanding!
                     </p>
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-gray-700 flex-shrink-0 flex items-center justify-center text-white mt-1">
+                  <div className="w-8 h-8 rounded-full bg-gray-700 shrink-0 flex items-center justify-center text-white mt-1">
                     <span className="text-xs font-bold">ME</span>
                   </div>
                 </div>
 
                 {/* AI Message with quiz */}
                 <div className="flex gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex-shrink-0 flex items-center justify-center text-white mt-1">
+                  <div className="w-8 h-8 rounded-full bg-linear-to-br from-primary to-accent shrink-0 flex items-center justify-center text-white mt-1">
                     <Brain size={16} />
                   </div>
                   <div className="bg-[#2D2D2D] p-4 rounded-2xl rounded-tl-none text-gray-200 text-sm shadow-sm max-w-[85%] border border-gray-700">
@@ -368,7 +368,7 @@ export default function Home() {
                 <div className="flex-1 h-10 bg-[#1E1E1E] rounded-full border border-gray-700 flex items-center px-4 text-sm text-gray-500">
                   Type your answer...
                 </div>
-                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-accent flex items-center justify-center text-white cursor-pointer hover:shadow-lg hover:shadow-primary/30 transition-shadow">
+                <div className="w-8 h-8 rounded-full bg-linear-to-r from-primary to-accent flex items-center justify-center text-white cursor-pointer hover:shadow-lg hover:shadow-primary/30 transition-shadow">
                   <ArrowRight size={14} />
                 </div>
               </div>
@@ -433,7 +433,7 @@ export default function Home() {
                 transition={{ duration: 0.5, delay: idx * 0.1 }}
                 className="group p-8 rounded-2xl bg-light border border-transparent hover:border-primary/20 hover:bg-white hover:shadow-soft-lg transition-all duration-300 relative overflow-hidden"
               >
-                <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary to-accent scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-bottom" />
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-linear-to-b from-primary to-accent scale-y-0 group-hover:scale-y-100 transition-transform duration-300 origin-bottom" />
                 <div
                   className={`w-14 h-14 ${feature.bg} rounded-xl flex items-center justify-center ${feature.color} mb-6 group-hover:scale-110 transition-transform duration-300`}
                 >
@@ -475,7 +475,7 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-8 relative">
             {/* Connecting line (desktop only) */}
-            <div className="hidden md:block absolute top-16 left-[16.67%] right-[16.67%] h-0.5 bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20" />
+            <div className="hidden md:block absolute top-16 left-[16.67%] right-[16.67%] h-0.5 bg-linear-to-r from-primary/20 via-primary/40 to-primary/20" />
 
             {steps.map((step, idx) => (
               <motion.div
@@ -488,7 +488,7 @@ export default function Home() {
               >
                 <div className="relative z-10 mx-auto w-16 h-16 rounded-2xl bg-white shadow-soft-md border border-gray-100 flex items-center justify-center mb-6 group-hover:shadow-soft-lg group-hover:border-primary/20 transition-all duration-300 group-hover:-translate-y-1">
                   <div className={`${step.color}`}>{step.icon}</div>
-                  <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-gradient-to-br from-primary to-accent text-white text-xs font-bold flex items-center justify-center shadow-md">
+                  <span className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-linear-to-br from-primary to-accent text-white text-xs font-bold flex items-center justify-center shadow-md">
                     {idx + 1}
                   </span>
                 </div>
@@ -593,7 +593,7 @@ export default function Home() {
             {user ? (
               <Link
                 href="/dashboard"
-                className="inline-flex bg-gradient-to-r from-primary to-accent hover:from-primary-hover hover:to-accent text-white px-10 py-4 rounded-xl font-bold text-lg transition-all shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 items-center justify-center gap-3"
+                className="inline-flex bg-linear-to-r from-primary to-accent hover:from-primary-hover hover:to-accent text-white px-10 py-4 rounded-xl font-bold text-lg transition-all shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 items-center justify-center gap-3"
               >
                 Open Dashboard
                 <ArrowRight size={20} />
@@ -601,7 +601,7 @@ export default function Home() {
             ) : (
               <Link
                 href="/signup"
-                className="inline-flex bg-gradient-to-r from-primary to-accent hover:from-primary-hover hover:to-accent text-white px-10 py-4 rounded-xl font-bold text-lg transition-all shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 items-center justify-center gap-3"
+                className="inline-flex bg-linear-to-r from-primary to-accent hover:from-primary-hover hover:to-accent text-white px-10 py-4 rounded-xl font-bold text-lg transition-all shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 items-center justify-center gap-3"
               >
                 Get Started Now
                 <ArrowRight size={20} />
@@ -617,7 +617,7 @@ export default function Home() {
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="text-center md:text-left">
               <div className="flex items-center gap-2 justify-center md:justify-start mb-2">
-                <div className="w-7 h-7 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-white text-xs font-bold">
+                <div className="w-7 h-7 bg-linear-to-br from-primary to-accent rounded-lg flex items-center justify-center text-white text-xs font-bold">
                   R
                 </div>
                 <span className="text-xl font-bold text-white">

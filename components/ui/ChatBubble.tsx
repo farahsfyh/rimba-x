@@ -1,5 +1,6 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
+import { Sparkles } from 'lucide-react'
 
 type Role = 'user' | 'ai'
 
@@ -8,10 +9,11 @@ interface ChatBubbleProps {
   content: string
   timestamp?: string
   isTyping?: boolean
+  userInitial?: string
   className?: string
 }
 
-export function ChatBubble({ role, content, timestamp, isTyping = false, className }: ChatBubbleProps) {
+export function ChatBubble({ role, content, timestamp, isTyping = false, userInitial = 'U', className }: ChatBubbleProps) {
   const isUser = role === 'user'
 
   return (
@@ -19,11 +21,13 @@ export function ChatBubble({ role, content, timestamp, isTyping = false, classNa
       {/* Avatar */}
       <div
         className={cn(
-          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold',
-          isUser ? 'bg-blue-600 text-white' : 'bg-purple-600 text-white'
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold shadow-sm',
+          isUser
+            ? 'bg-primary text-white'
+            : 'bg-linear-to-br from-primary to-accent text-white'
         )}
       >
-        {isUser ? 'U' : 'AI'}
+        {isUser ? userInitial : <Sparkles size={14} />}
       </div>
 
       {/* Bubble */}
@@ -31,8 +35,8 @@ export function ChatBubble({ role, content, timestamp, isTyping = false, classNa
         className={cn(
           'max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
           isUser
-            ? 'bg-blue-600 text-white rounded-tr-sm'
-            : 'bg-gray-100 text-gray-800 rounded-tl-sm'
+            ? 'bg-primary text-white rounded-tr-sm shadow-sm shadow-primary/20'
+            : 'bg-white text-secondary border border-gray-100 rounded-tl-sm shadow-sm'
         )}
       >
         {isTyping ? (
@@ -43,7 +47,7 @@ export function ChatBubble({ role, content, timestamp, isTyping = false, classNa
         {timestamp && (
           <p
             className={cn(
-              'mt-1 text-right text-[10px]',
+              'mt-1.5 text-right text-[10px]',
               isUser ? 'text-blue-200' : 'text-gray-400'
             )}
           >
@@ -61,7 +65,7 @@ function TypingIndicator() {
       {[0, 1, 2].map((i) => (
         <span
           key={i}
-          className="h-2 w-2 rounded-full bg-gray-400 animate-bounce"
+          className="h-2 w-2 rounded-full bg-primary/40 animate-bounce"
           style={{ animationDelay: `${i * 150}ms` }}
         />
       ))}

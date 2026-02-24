@@ -2,13 +2,13 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="min-h-screen flex">
       {/* Left panel - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-secondary via-[#1a2744] to-[#0c1220] relative overflow-hidden items-center justify-center p-12">
+      <div className="hidden lg:flex lg:w-1/2 bg-linear-to-br from-secondary via-[#1a2744] to-[#0c1220] relative overflow-hidden items-center justify-center p-12">
         {/* Background decorations */}
         <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/10 rounded-full blur-[100px]" />
         <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-accent/10 rounded-full blur-[80px]" />
 
         <div className="relative z-10 text-center max-w-md">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-8 shadow-2xl shadow-primary/30">
+          <div className="w-16 h-16 bg-linear-to-br from-primary to-accent rounded-2xl flex items-center justify-center text-white text-2xl font-bold mx-auto mb-8 shadow-2xl shadow-primary/30">
             R
           </div>
           <h1 className="text-4xl font-bold text-white mb-4">
