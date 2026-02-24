@@ -2,8 +2,24 @@ import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
 import type { ParsedDocument } from '@/types';
 
+// Polyfill browser globals required by pdf-parse/pdfjs-dist in Node.js
+if (typeof globalThis.DOMMatrix === 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (globalThis as any).DOMMatrix = class DOMMatrix {
+    constructor() { return new Proxy(this, {}) }
+  };
+}
+if (typeof globalThis.ImageData === 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (globalThis as any).ImageData = class ImageData {};
+}
+if (typeof globalThis.Path2D === 'undefined') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (globalThis as any).Path2D = class Path2D {};
+}
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdf = require('pdf-parse');
+const { PDFParse } = require('pdf-parse');
 
 /**
  * Parse PDF file
@@ -12,13 +28,14 @@ export async function parsePDF(file: File): Promise<ParsedDocument> {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  const data = await pdf(buffer);
+  const parser = new PDFParse({ data: buffer });
+  const result = await parser.getText();
 
   return {
-    text: data.text.trim(),
+    text: result.text.trim(),
     metadata: {
       title: file.name,
-      pageCount: data.numpages,
+      pageCount: result.total,
       format: 'PDF',
     },
   };
