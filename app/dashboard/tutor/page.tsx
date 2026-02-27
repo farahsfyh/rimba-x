@@ -25,29 +25,29 @@ interface Message {
 const SUGGESTED_PROMPTS = [
   {
     icon: BookOpen,
-    label: 'Explain a concept',
-    prompt: 'Can you explain the concept of photosynthesis in simple terms?',
+    label: 'Summarise materials',
+    prompt: 'Summarise the key points from my uploaded materials.',
     color: 'text-primary',
     bg: 'bg-primary/5 hover:bg-primary/10',
   },
   {
     icon: Lightbulb,
-    label: 'Help me understand',
-    prompt: "I'm struggling to understand algebra. Where should I start?",
+    label: 'Explain a concept',
+    prompt: 'Explain the main concepts covered in my uploaded documents.',
     color: 'text-accent',
     bg: 'bg-accent/5 hover:bg-accent/10',
   },
   {
     icon: Brain,
     label: 'Quiz me',
-    prompt: "Can you quiz me on the materials I've uploaded?",
+    prompt: 'Create 5 quiz questions based strictly on my uploaded materials.',
     color: 'text-success',
     bg: 'bg-success/5 hover:bg-success/10',
   },
   {
     icon: Sparkles,
-    label: 'Study plan',
-    prompt: 'Help me create a study plan for my upcoming exam.',
+    label: 'Key terms',
+    prompt: 'List and define the important terms found in my uploaded documents.',
     color: 'text-warning',
     bg: 'bg-warning/5 hover:bg-warning/10',
   },
@@ -228,8 +228,11 @@ export default function TutorRoomPage() {
                 <h2 className="text-lg font-bold text-secondary mb-1">
                   Hi {user?.user_metadata?.full_name?.split(' ')[0] || 'there'}, ready to learn? 👋
                 </h2>
-                <p className="text-sm text-gray-400 max-w-xs mb-8">
-                  Ask me anything, or pick a suggestion below to get started.
+                <p className="text-sm text-gray-400 max-w-sm mb-2">
+                  I answer questions <strong className="text-gray-500">only from your uploaded materials</strong>. Upload a document first, then ask me anything about it.
+                </p>
+                <p className="text-xs text-gray-300 mb-8">
+                  No uploaded materials? Head to <span className="font-medium">Upload</span> to add your notes or textbooks.
                 </p>
               </motion.div>
 

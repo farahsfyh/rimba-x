@@ -13,28 +13,28 @@ export function getGeminiModel(modelName: string = 'gemini-2.0-flash') {
 /**
  * System prompt for the AI tutor
  */
-export const TUTOR_SYSTEM_PROMPT = `You are a patient, encouraging AI tutor for Southeast Asian students.
+export const TUTOR_SYSTEM_PROMPT = `You are a focused AI tutor that teaches ONLY from the student's uploaded learning materials.
 
-Your teaching style:
-- Break down concepts step-by-step
+CRITICAL RULES — follow these absolutely:
+1. ONLY answer using information explicitly present in the [CONTEXT] provided with each message.
+2. If the [CONTEXT] is empty or does not contain relevant information, respond ONLY with: "I don't have enough information in your uploaded materials to answer this. Please upload a document that covers this topic."
+3. Do NOT use your general training knowledge to fill in gaps. Do NOT speculate or infer beyond the provided context.
+4. Do NOT make up facts, definitions, formulas, or explanations that are not in the context.
+5. If the context partially answers the question, share only what the context says and clearly state what is not covered.
+
+When the context DOES contain the answer:
+- Break down the explanation step-by-step using only the material provided
+- Quote or paraphrase directly from the context
 - Use simple, clear language appropriate for the student's level
-- Check for understanding frequently with questions
-- Provide examples relevant to ASEAN contexts (Singapore, Malaysia, Indonesia, Vietnam, Thailand, Philippines)
-- Encourage critical thinking with guiding questions
+- Be encouraging and supportive
+- Check for understanding with a follow-up question
+
+Teaching style:
+- Be culturally sensitive and inclusive for Southeast Asian students
 - Celebrate effort and progress
-- Be culturally sensitive and inclusive
-
-Important guidelines:
-- Base your answers ONLY on the provided context from the student's materials
-- If the context doesn't contain relevant information, acknowledge this politely
-- Ask if the student would like to upload additional materials
 - Never overwhelm with too much information at once
-- Use everyday examples that students can relate to
-- Be supportive and never make students feel inadequate
-- If a student struggles, offer alternative explanations
-- Encourage questions and curiosity
 
-Remember: You're not just answering questions, you're helping students learn how to learn.`;
+Your only knowledge source is the [CONTEXT] block. Nothing else.`;
 
 /**
  * Generate chat response with context
@@ -44,34 +44,35 @@ export async function generateTutorResponse(
   context: string,
   conversationHistory: Array<{ role: 'user' | 'model'; content: string }>
 ): Promise<string> {
-  const model = getGeminiModel();
-  
-  // Build the full prompt with context
-  const contextPrompt = context 
-    ? `Context from student's materials:\n${context}\n\n`
-    : 'No specific context available from uploaded materials.\n\n';
-  
-  const fullSystemPrompt = `${TUTOR_SYSTEM_PROMPT}\n\n${contextPrompt}`;
-  
-  // Start chat with history
+  // Use systemInstruction for the static tutor persona
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    systemInstruction: TUTOR_SYSTEM_PROMPT,
+  });
+
+  // Always inject the retrieved context into each user message
+  // Context is guaranteed non-empty here (route handler short-circuits otherwise)
+  const contextBlock = `[CONTEXT FROM STUDENT'S UPLOADED MATERIALS — USE ONLY THIS]
+${context}
+[END CONTEXT]
+
+IMPORTANT: Base your entire answer ONLY on the [CONTEXT] above. Do NOT use outside knowledge.`;
+
+  const messageWithContext = `${contextBlock}\n\nStudent question: ${userQuestion}`;
+
   const chat = model.startChat({
     history: conversationHistory.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [{ text: msg.content }],
     })),
     generationConfig: {
-      maxOutputTokens: 1000,
-      temperature: 0.7,
-      topP: 0.9,
-      topK: 40,
+      maxOutputTokens: 1200,
+      temperature: 0.1,  // Very low — stay strictly on provided text
+      topP: 0.85,
+      topK: 10,
     },
   });
-  
-  // Send message with system prompt prepended to first message
-  const messageWithContext = conversationHistory.length === 0
-    ? `${fullSystemPrompt}\n\nStudent question: ${userQuestion}`
-    : userQuestion;
-  
+
   const result = await chat.sendMessage(messageWithContext);
   return result.response.text();
 }
@@ -84,31 +85,37 @@ export async function* generateStreamingResponse(
   context: string,
   conversationHistory: Array<{ role: 'user' | 'model'; content: string }>
 ): AsyncGenerator<string> {
-  const model = getGeminiModel();
-  
-  const contextPrompt = context 
-    ? `Context from student's materials:\n${context}\n\n`
-    : 'No specific context available from uploaded materials.\n\n';
-  
-  const fullSystemPrompt = `${TUTOR_SYSTEM_PROMPT}\n\n${contextPrompt}`;
-  
+  // Use systemInstruction for the static tutor persona
+  const model = genAI.getGenerativeModel({
+    model: 'gemini-2.0-flash',
+    systemInstruction: TUTOR_SYSTEM_PROMPT,
+  });
+
+  // Always inject the retrieved context into each user message
+  // Context is guaranteed non-empty here (route handler short-circuits otherwise)
+  const contextBlock = `[CONTEXT FROM STUDENT'S UPLOADED MATERIALS — USE ONLY THIS]
+${context}
+[END CONTEXT]
+
+IMPORTANT: Base your entire answer ONLY on the [CONTEXT] above. Do NOT use outside knowledge.`;
+
+  const messageWithContext = `${contextBlock}\n\nStudent question: ${userQuestion}`;
+
   const chat = model.startChat({
     history: conversationHistory.map(msg => ({
       role: msg.role === 'user' ? 'user' : 'model',
       parts: [{ text: msg.content }],
     })),
     generationConfig: {
-      maxOutputTokens: 1000,
-      temperature: 0.7,
+      maxOutputTokens: 1200,
+      temperature: 0.1,  // Very low — stay strictly on provided text
+      topP: 0.85,
+      topK: 10,
     },
   });
-  
-  const messageWithContext = conversationHistory.length === 0
-    ? `${fullSystemPrompt}\n\nStudent question: ${userQuestion}`
-    : userQuestion;
-  
+
   const result = await chat.sendMessageStream(messageWithContext);
-  
+
   for await (const chunk of result.stream) {
     const chunkText = chunk.text();
     yield chunkText;

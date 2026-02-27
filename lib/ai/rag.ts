@@ -48,9 +48,10 @@ export async function findRelevantChunks(
   const queryEmbedding = await generateEmbedding(query);
   
   // Use Supabase function for similarity search
+  // threshold 0.4: broad enough to catch paraphrased questions, strict enough to exclude noise
   const { data, error } = await supabase.rpc('match_documents', {
     query_embedding: queryEmbedding,
-    match_threshold: 0.7, // Only return chunks with >70% similarity
+    match_threshold: 0.4,
     match_count: topK,
     user_id: userId,
   });

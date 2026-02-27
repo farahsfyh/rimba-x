@@ -55,7 +55,7 @@ CREATE TABLE IF NOT EXISTS document_embeddings (
   document_id UUID REFERENCES documents(id) ON DELETE CASCADE NOT NULL,
   chunk_index INTEGER NOT NULL,
   content TEXT NOT NULL,
-  embedding vector(768), -- Gemini embedding-001 outputs 768 dimensions
+  embedding vector(3072), -- gemini-embedding-001 outputs 3072 dimensions
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -101,7 +101,7 @@ CREATE INDEX IF NOT EXISTS idx_user_achievements_user_id ON user_achievements(us
 -- 4. VECTOR SIMILARITY SEARCH FUNCTION (for RAG)
 -- ============================================================
 CREATE OR REPLACE FUNCTION match_documents(
-  query_embedding vector(768),
+  query_embedding vector(3072),
   match_threshold FLOAT,
   match_count INT,
   user_id UUID
@@ -201,6 +201,40 @@ ALTER TABLE documents ADD COLUMN IF NOT EXISTS title TEXT;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS subject TEXT;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en';
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS processed BOOLEAN DEFAULT FALSE;
+
+-- ============================================================
+-- MIGRATION: Switch embedding model to gemini-embedding-001 (3072 dims)
+-- Run this if you already created the document_embeddings table with vector(768)
+-- ============================================================
+-- Step 1: Clear existing embeddings (they were generated with wrong model anyway)
+TRUNCATE TABLE document_embeddings;
+-- Step 2: Change the column type from 768 to 3072
+ALTER TABLE document_embeddings ALTER COLUMN embedding TYPE vector(3072);
+-- Step 3: Recreate the search function with correct dimension
+CREATE OR REPLACE FUNCTION match_documents(
+  query_embedding vector(3072),
+  match_threshold FLOAT,
+  match_count INT,
+  user_id UUID
+)
+RETURNS TABLE (
+  id UUID,
+  content TEXT,
+  similarity FLOAT
+)
+LANGUAGE SQL STABLE
+AS $$
+  SELECT
+    document_embeddings.id,
+    document_embeddings.content,
+    1 - (document_embeddings.embedding <=> query_embedding) AS similarity
+  FROM document_embeddings
+  WHERE
+    document_embeddings.user_id = match_documents.user_id
+    AND 1 - (document_embeddings.embedding <=> query_embedding) > match_threshold
+  ORDER BY document_embeddings.embedding <=> query_embedding
+  LIMIT match_count;
+$$;
 --   2. Add this storage policy in Storage → Policies:
 --      Allow authenticated users to upload to their own folder
 -- ============================================================
