@@ -2,23 +2,25 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { BookOpen, FileText, FileSpreadsheet, File, Plus, ExternalLink } from 'lucide-react'
+import { BookOpen, FileText, FileSpreadsheet, Plus, ExternalLink } from 'lucide-react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 interface Document {
     id: string
     filename: string
+    title: string | null
+    subject: string | null
     file_type: string
     file_size: number
+    processed: boolean
     created_at: string
-    parsed_text: string | null
 }
 
 function getFileIcon(type: string) {
     if (type.includes('pdf')) return FileText
     if (type.includes('sheet') || type.includes('excel')) return FileSpreadsheet
-    return File
+    return FileText
 }
 
 function formatDate(dateStr: string) {
@@ -41,7 +43,7 @@ export default function NotesExercisesPage() {
             if (!user) { setLoading(false); return }
             const { data } = await supabase
                 .from('documents')
-                .select('*')
+                .select('id, filename, title, subject, file_type, file_size, processed, created_at')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false })
             if (data) setDocuments(data)
@@ -97,7 +99,6 @@ export default function NotesExercisesPage() {
                 <div className="space-y-3">
                     {documents.map((doc, i) => {
                         const Icon = getFileIcon(doc.file_type)
-                        const preview = doc.parsed_text?.slice(0, 120)?.trim()
                         return (
                             <motion.div key={doc.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                                 className="flex items-start gap-4 p-5 bg-white rounded-2xl border border-gray-100 shadow-sm hover:border-primary/20 hover:shadow-soft-md transition-all"
@@ -107,11 +108,17 @@ export default function NotesExercisesPage() {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-start justify-between gap-2">
-                                        <p className="font-semibold text-secondary truncate">{doc.filename}</p>
+                                        <p className="font-semibold text-secondary truncate">{doc.title || doc.filename}</p>
                                         <span className="text-xs text-muted shrink-0">{formatDate(doc.created_at)}</span>
                                     </div>
-                                    {preview && <p className="text-xs text-muted mt-1 line-clamp-2 leading-relaxed">{preview}…</p>}
-                                    <p className="text-xs text-muted mt-1.5">{formatSize(doc.file_size)}</p>
+                                    <p className="text-xs text-muted mt-1.5">
+                                        {formatSize(doc.file_size)}
+                                        {doc.subject && ` · ${doc.subject}`}
+                                        {' · '}
+                                        <span className={doc.processed ? 'text-success' : 'text-warning'}>
+                                            {doc.processed ? 'AI Ready' : 'Processing…'}
+                                        </span>
+                                    </p>
                                 </div>
                                 <button className="shrink-0 text-muted hover:text-primary transition-colors p-1 rounded-lg hover:bg-primary/5">
                                     <ExternalLink size={15} />

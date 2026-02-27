@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { generateStreamingResponse } from '@/lib/ai/gemini'
+import { assembleContext } from '@/lib/ai/rag'
 import { NextRequest } from 'next/server'
 
 export const runtime = 'nodejs'
@@ -24,10 +25,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { message, history = [], context = '' } = body
+    const { message, history = [] } = body
 
     if (!message || typeof message !== 'string') {
         return new Response(JSON.stringify({ error: 'Message is required' }), { status: 400 })
+    }
+
+    // Retrieve relevant context from the user's uploaded documents via RAG
+    let context = ''
+    try {
+        context = await assembleContext(user.id, message, 3)
+    } catch (e) {
+        console.warn('[chat] RAG context retrieval failed (proceeding without context):', e)
     }
 
     // Stream the response back to the client

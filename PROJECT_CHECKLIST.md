@@ -26,9 +26,9 @@ This checklist tracks the development progress of RimbaX AI Tutor, a free AI-pow
 - [x] Create Supabase project
 - [x] Deploy database schema (users, progress, documents, embeddings)
 - [x] Configure Row Level Security (RLS) policies
-- [ ] Setup storage buckets for user files
+- [x] Setup storage buckets for user files (documents bucket, authenticated policies)
 - [x] Create vector similarity search function
-- [ ] Enable pgvector extension
+- [x] Enable pgvector extension
 
 ### Authentication
 - [x] Implement Supabase Auth client setup
@@ -54,7 +54,7 @@ This checklist tracks the development progress of RimbaX AI Tutor, a free AI-pow
 ### File Upload & Processing
 - [x] Create file upload interface with drag-and-drop
 - [x] Implement file validation (type, size, magic numbers)
-- [ ] Setup Supabase Storage integration
+- [x] Setup Supabase Storage integration
 - [x] Build PDF parser (using pdf-parse)
 - [x] Build DOCX parser (using mammoth)
 - [x] Build XLSX parser (using xlsx)
@@ -62,6 +62,10 @@ This checklist tracks the development progress of RimbaX AI Tutor, a free AI-pow
 - [x] Implement text chunking algorithm
 - [ ] Add malware scanning (ClamScan)
 - [x] Create document management UI
+- [x] Server-side parse API route (/api/parse)
+- [x] Full upload pipeline: storage → parse → DB → embeddings (/api/upload)
+- [x] Document list + delete API (/api/documents)
+- [x] File persistence across page refreshes (Supabase DB + Storage)
 
 ### RAG System
 - [x] Setup Gemini API client
@@ -70,6 +74,7 @@ This checklist tracks the development progress of RimbaX AI Tutor, a free AI-pow
 - [x] Build similarity search function
 - [ ] Test vector retrieval accuracy
 - [x] Implement context assembly for prompts
+- [x] Wire RAG into tutor chat (live context from user documents)
 
 ### AI Tutoring
 - [x] Create chat interface component
@@ -331,7 +336,7 @@ This checklist tracks the development progress of RimbaX AI Tutor, a free AI-pow
 ## 🎯 Current Status
 
 **Phase:** 2 - Core Features (in progress)
-**Week:** 3
-**Completed:** ~65%
+**Week:** 4
+**Completed:** ~75%
 
-Last Updated: February 25, 2026
+Last Updated: February 28, 2026

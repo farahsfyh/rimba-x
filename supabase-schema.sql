@@ -40,6 +40,10 @@ CREATE TABLE IF NOT EXISTS documents (
   file_path TEXT NOT NULL,
   file_type TEXT NOT NULL,
   file_size INTEGER NOT NULL,
+  title TEXT,
+  subject TEXT,
+  language TEXT DEFAULT 'en',
+  processed BOOLEAN DEFAULT FALSE,
   parsed_text TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -188,6 +192,15 @@ ON CONFLICT (key) DO NOTHING;
 -- DONE! Your database is ready.
 -- Next steps:
 --   1. Go to Storage → New bucket → name: "documents" → Private
+
+-- ============================================================
+-- MIGRATION: Run this if you already ran the schema above
+-- (adds columns that were added in a later version)
+-- ============================================================
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS title TEXT;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS subject TEXT;
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS language TEXT DEFAULT 'en';
+ALTER TABLE documents ADD COLUMN IF NOT EXISTS processed BOOLEAN DEFAULT FALSE;
 --   2. Add this storage policy in Storage → Policies:
 --      Allow authenticated users to upload to their own folder
 -- ============================================================
