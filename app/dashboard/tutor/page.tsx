@@ -1,9 +1,8 @@
-'use client'
+﻿'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChatBubble } from '@/components/ui/ChatBubble'
 import { useUser } from '@/lib/hooks/useUser'
 import {
   Send,
@@ -13,8 +12,16 @@ import {
   Lightbulb,
   RotateCcw,
   ChevronDown,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  FileText,
+  MoreVertical,
+  X,
 } from 'lucide-react'
 
+/* ─── Types ─────────────────────────────────────────────── */
 interface Message {
   id: string
   role: 'user' | 'ai'
@@ -22,87 +29,341 @@ interface Message {
   timestamp: string
 }
 
+/* ─── Constants ─────────────────────────────────────────── */
 const SUGGESTED_PROMPTS = [
-  {
-    icon: BookOpen,
-    label: 'Summarise materials',
-    prompt: 'Summarise the key points from my uploaded materials.',
-    color: 'text-primary',
-    bg: 'bg-primary/5 hover:bg-primary/10',
-  },
-  {
-    icon: Lightbulb,
-    label: 'Explain a concept',
-    prompt: 'Explain the main concepts covered in my uploaded documents.',
-    color: 'text-accent',
-    bg: 'bg-accent/5 hover:bg-accent/10',
-  },
-  {
-    icon: Brain,
-    label: 'Quiz me',
-    prompt: 'Create 5 quiz questions based strictly on my uploaded materials.',
-    color: 'text-success',
-    bg: 'bg-success/5 hover:bg-success/10',
-  },
-  {
-    icon: Sparkles,
-    label: 'Key terms',
-    prompt: 'List and define the important terms found in my uploaded documents.',
-    color: 'text-warning',
-    bg: 'bg-warning/5 hover:bg-warning/10',
-  },
+  { icon: BookOpen,  label: 'Summarise materials', prompt: 'Summarise the key points from my uploaded materials.' },
+  { icon: Lightbulb, label: 'Explain a concept',   prompt: 'Explain the main concepts covered in my uploaded documents.' },
+  { icon: Brain,     label: 'Quiz me',              prompt: 'Create 5 quiz questions based strictly on my uploaded materials.' },
+  { icon: Sparkles,  label: 'Key terms',            prompt: 'List and define the important terms found in my uploaded documents.' },
 ]
 
-function formatTime(date: Date) {
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+function formatTime(d: Date) {
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+/* ─── Animated Maya Avatar ──────────────────────────────── */
+function MayaAvatar({ isSpeaking }: { isSpeaking: boolean }) {
+  return (
+    <div className="relative flex items-center justify-center">
+      {/* Outer glow */}
+      <motion.div
+        animate={{ scale: isSpeaking ? [1, 1.06, 1] : 1, opacity: isSpeaking ? [0.4, 0.7, 0.4] : 0.25 }}
+        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+        className="absolute w-52 h-52 rounded-full pointer-events-none"
+        style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.35) 0%, transparent 70%)' }}
+      />
+      {/* Idle bob */}
+      <motion.div
+        animate={{ y: [0, -6, 0] }}
+        transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+        className="relative w-44 h-44"
+      >
+        <div
+          className="w-44 h-44 rounded-full flex items-center justify-center relative overflow-hidden"
+          style={{
+            background: 'linear-gradient(145deg, #1e1b4b 0%, #312e81 60%, #1e1b4b 100%)',
+            boxShadow: '0 0 50px rgba(139,92,246,0.5), 0 0 100px rgba(99,102,241,0.2), inset 0 1px 0 rgba(255,255,255,0.12)',
+            border: '2px solid rgba(139,92,246,0.5)',
+          }}
+        >
+          {/* SVG illustrated avatar */}
+          <svg viewBox="0 0 180 200" className="w-40 h-40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Shoulders / body base */}
+            <ellipse cx="90" cy="185" rx="55" ry="35" fill="#4c1d95" />
+            <ellipse cx="90" cy="170" rx="42" ry="28" fill="#5b21b6" />
+            {/* Hijab outer (large dark wrap) */}
+            <ellipse cx="90" cy="88" rx="52" ry="58" fill="#6d28d9" />
+            {/* Head / hijab top */}
+            <ellipse cx="90" cy="72" rx="50" ry="50" fill="#7c3aed" />
+            {/* Face skin */}
+            <ellipse cx="90" cy="95" rx="33" ry="36" fill="#fcd5b4" />
+            {/* Hijab side folds */}
+            <path d="M38 80 Q40 30 90 25 Q140 30 142 80 Q130 60 90 58 Q50 60 38 80Z" fill="#6d28d9" />
+            <path d="M38 80 Q35 110 38 140 Q55 165 90 168 Q60 160 50 130 Q42 105 38 80Z" fill="#7c3aed" />
+            <path d="M142 80 Q145 110 142 140 Q125 165 90 168 Q120 160 130 130 Q138 105 142 80Z" fill="#7c3aed" />
+            {/* Glasses */}
+            <rect x="62" y="88" width="22" height="14" rx="5" fill="rgba(196,181,253,0.15)" stroke="#c4b5fd" strokeWidth="2" />
+            <rect x="92" y="88" width="22" height="14" rx="5" fill="rgba(196,181,253,0.15)" stroke="#c4b5fd" strokeWidth="2" />
+            <line x1="84" y1="95" x2="92" y2="95" stroke="#c4b5fd" strokeWidth="2" />
+            <motion.ellipse cx="73" cy="95" rx="4" ry="4" fill="#3d1a00"
+              animate={{ ry: [4, 0.5, 4] }}
+              transition={{ duration: 4, repeat: Infinity, repeatDelay: 2.5, ease: 'easeInOut' }} />
+            <motion.ellipse cx="103" cy="95" rx="4" ry="4" fill="#3d1a00"
+              animate={{ ry: [4, 0.5, 4] }}
+              transition={{ duration: 4, repeat: Infinity, repeatDelay: 2.5, ease: 'easeInOut' }} />
+            <circle cx="74" cy="93" r="1.5" fill="white" opacity="0.9" />
+            <circle cx="104" cy="93" r="1.5" fill="white" opacity="0.9" />
+            <path d="M88 104 Q90 108 92 104" stroke="#b06040" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+            <motion.path
+              d="M80 117 Q90 122 100 117"
+              stroke="#e07050" strokeWidth="2" fill="none" strokeLinecap="round"
+              animate={{ d: isSpeaking ? ['M80 116 Q90 125 100 116', 'M80 117 Q90 120 100 117', 'M80 116 Q90 125 100 116'] : 'M80 117 Q90 122 100 117' }}
+              transition={{ duration: 0.4, repeat: isSpeaking ? Infinity : 0 }} />
+          </svg>
+        </div>
+        {isSpeaking && (
+          <motion.div
+            animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0, 0.5] }}
+            transition={{ duration: 0.8, repeat: Infinity }}
+            className="absolute inset-0 rounded-full border-2 border-indigo-400 pointer-events-none"
+          />
+        )}
+      </motion.div>
+    </div>
+  )
+}
+
+/* ─── Avatar Panel ───────────────────────────────────────── */
+function AvatarPanel({ micOn, voiceOn, isSpeaking, onToggleMic, onToggleVoice, activeFile }: {
+  micOn: boolean; voiceOn: boolean; isSpeaking: boolean
+  onToggleMic: () => void; onToggleVoice: () => void; activeFile: string | null
+}) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full gap-6 px-6 py-8">
+      <MayaAvatar isSpeaking={isSpeaking} />
+      <div className="text-center">
+        <h2 className="text-lg font-bold text-white tracking-wide">Maya</h2>
+        <p className="text-sm text-violet-300 mt-0.5">Your AI Tutor</p>
+      </div>
+      <div className="flex gap-3">
+        <button onClick={onToggleMic}
+          className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
+          style={{
+            background: micOn ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.06)',
+            border: micOn ? '1px solid rgba(16,185,129,0.5)' : '1px solid rgba(255,255,255,0.12)',
+            color: micOn ? '#6ee7b7' : '#94a3b8',
+            boxShadow: micOn ? '0 0 12px rgba(16,185,129,0.2)' : 'none',
+            minHeight: 44,
+          }}>
+          {micOn ? <Mic size={14} /> : <MicOff size={14} />}
+          <span>Mic {micOn ? 'ON' : 'OFF'}</span>
+        </button>
+        <button onClick={onToggleVoice}
+          className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
+          style={{
+            background: voiceOn ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.06)',
+            border: voiceOn ? '1px solid rgba(14,165,233,0.5)' : '1px solid rgba(255,255,255,0.12)',
+            color: voiceOn ? '#7dd3fc' : '#94a3b8',
+            boxShadow: voiceOn ? '0 0 12px rgba(14,165,233,0.2)' : 'none',
+            minHeight: 44,
+          }}>
+          {voiceOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
+          <span>Voice {voiceOn ? 'ON' : 'OFF'}</span>
+        </button>
+      </div>
+      <div className="flex items-center gap-2 px-4 py-2 rounded-full text-xs text-slate-300 max-w-[220px]"
+          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
+        <FileText size={12} className="text-indigo-400 shrink-0" />
+        <span className="truncate">{activeFile ?? 'No resources loaded'}</span>
+      </div>
+    </div>
+  )
+}
+
+/* ─── Dark Chat Bubble ───────────────────────────────────── */
+function DarkChatBubble({ msg, userInitial, isStreamingThis }: {
+  msg: Message; userInitial: string; isStreamingThis: boolean
+}) {
+  const isUser = msg.role === 'user'
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22 }}
+      className={`flex gap-3 w-full ${isUser ? 'flex-row-reverse' : ''}`}
+    >
+      <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold"
+        style={{
+          background: isUser ? 'linear-gradient(135deg,#FF6B6B,#ee5555)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+          boxShadow: isUser ? '0 2px 8px rgba(255,107,107,0.4)' : '0 2px 8px rgba(99,102,241,0.4)',
+        }}>
+        {isUser ? userInitial : <Sparkles size={14} />}
+      </div>
+      <div className="max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
+        style={isUser
+          ? { background: 'linear-gradient(135deg,#FF6B6B,#ee5555)', color: 'white', borderRadius: '18px 4px 18px 18px', boxShadow: '0 4px 16px rgba(255,107,107,0.25)' }
+          : { background: '#252548', color: '#e2e8f0', borderRadius: '4px 18px 18px 18px', border: '1px solid rgba(139,92,246,0.25)', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }
+        }>
+        {isStreamingThis && msg.content === '' ? (
+          <div className="flex items-center gap-1 py-0.5">
+            {[0,1,2].map(i => (
+              <span key={i} className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce"
+                style={{ animationDelay: `${i * 150}ms` }} />
+            ))}
+          </div>
+        ) : (
+          <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+        )}
+        {msg.timestamp && (
+          <p className={`mt-1.5 text-right text-[10px] ${isUser ? 'text-red-200' : 'text-slate-500'}`}>
+            {msg.timestamp}
+          </p>
+        )}
+      </div>
+    </motion.div>
+  )
+}
+
+/* ─── Main Page ─────────────────────────────────────────── */
 export default function TutorRoomPage() {
   const { user, loading } = useUser()
   const router = useRouter()
-  const [messages, setMessages] = useState<Message[]>([])
-  const [input, setInput] = useState('')
-  const [isStreaming, setIsStreaming] = useState(false)
+
+  const [messages, setMessages]           = useState<Message[]>([])
+  const [input, setInput]                 = useState('')
+  const [isStreaming, setIsStreaming]      = useState(false)
   const [showScrollBtn, setShowScrollBtn] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [micOn, setMicOn]                 = useState(false)
+  const [voiceOn, setVoiceOn]             = useState(false)
+  const [activeFile, setActiveFile]       = useState<string | null>(null)
+  const [showMobileAvatar, setShowMobileAvatar]   = useState(false)
+  const [tabletExpanded, setTabletExpanded]       = useState(false)
+  const [showMobileMenu, setShowMobileMenu]       = useState(false)
+  const [isSpeaking, setIsSpeaking]               = useState(false)
+  const [isListening, setIsListening]             = useState(false)
+
+  const bottomRef      = useRef<HTMLDivElement>(null)
+  const scrollRef      = useRef<HTMLDivElement>(null)
+  const textareaRef    = useRef<HTMLTextAreaElement>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null)
+  const transcriptRef  = useRef('')
+  const sendMessageRef = useRef<(text: string) => void>(() => {})
+  const voiceOnRef     = useRef(voiceOn)
 
   const userInitial = (user?.user_metadata?.full_name || user?.email || 'U').charAt(0).toUpperCase()
 
+  /* Keep refs in sync */
+  useEffect(() => { voiceOnRef.current = voiceOn }, [voiceOn])
+
+  /* Cancel TTS when voice is turned off */
   useEffect(() => {
-    if (!showScrollBtn) {
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (!voiceOn) {
+      window.speechSynthesis?.cancel()
+      setIsSpeaking(false)
     }
+  }, [voiceOn])
+
+  /* Stop listening when mic feature is turned off */
+  useEffect(() => {
+    if (!micOn) {
+      recognitionRef.current?.stop()
+      recognitionRef.current = null
+      setIsListening(false)
+    }
+  }, [micOn])
+
+  /* Cleanup TTS + STT on unmount */
+  useEffect(() => {
+    return () => {
+      window.speechSynthesis?.cancel()
+      recognitionRef.current?.stop()
+    }
+  }, [])
+
+  /* Load first active file name */
+  useEffect(() => {
+    fetch('/api/documents')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.documents?.length) setActiveFile(d.documents[0].filename) })
+      .catch(() => {})
+  }, [])
+
+  /* Auto scroll */
+  useEffect(() => {
+    if (!showScrollBtn) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, showScrollBtn])
 
-  const handleScroll = () => {
-    const el = scrollRef.current
-    if (!el) return
-    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
-    setShowScrollBtn(distFromBottom > 200)
-  }
-
+  /* Auto-resize textarea */
   useEffect(() => {
     const ta = textareaRef.current
     if (!ta) return
     ta.style.height = 'auto'
-    ta.style.height = `${Math.min(ta.scrollHeight, 160)}px`
+    ta.style.height = `${Math.min(ta.scrollHeight, 140)}px`
   }, [input])
 
-  const scrollToBottom = () => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-    setShowScrollBtn(false)
+  const handleScroll = () => {
+    const el = scrollRef.current
+    if (!el) return
+    setShowScrollBtn(el.scrollHeight - el.scrollTop - el.clientHeight > 180)
   }
 
-  const sendMessage = async (text: string) => {
-    if (!text.trim() || isStreaming) return
-    const userMsg: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content: text.trim(),
-      timestamp: formatTime(new Date()),
+  /* ── TTS ─────────────────────────────────────────────── */
+  const speakText = useCallback((text: string) => {
+    if (!text.trim()) return
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'en-US'
+    utterance.rate = 1.0
+    utterance.pitch = 1.1
+    utterance.volume = 1.0
+    // Prefer a female voice if available
+    const voices = window.speechSynthesis.getVoices()
+    const preferred = voices.find(v =>
+      /female|woman|girl|zira|samantha|karen|moira|tessa/i.test(v.name)
+    ) || voices.find(v => v.lang.startsWith('en'))
+    if (preferred) utterance.voice = preferred
+    utterance.onstart = () => setIsSpeaking(true)
+    utterance.onend   = () => setIsSpeaking(false)
+    utterance.onerror = () => setIsSpeaking(false)
+    window.speechSynthesis.speak(utterance)
+  }, [])
+
+  /* ── STT ─────────────────────────────────────────────── */
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop()
+    recognitionRef.current = null
+    setIsListening(false)
+  }, [])
+
+  const startListening = useCallback(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SR) {
+      alert('Speech recognition is not supported in this browser. Try Chrome or Edge.')
+      return
     }
+    if (isListening) { stopListening(); return }
+
+    window.speechSynthesis?.cancel() // stop TTS while user speaks
+    transcriptRef.current = ''
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rec = new SR() as any
+    rec.continuous = false
+    rec.interimResults = true
+    rec.lang = 'en-US'
+
+    rec.onresult = (event: any) => {
+      const transcript = Array.from(event.results as any[])
+        .map((r: any) => r[0].transcript)
+        .join('')
+      setInput(transcript)
+      transcriptRef.current = transcript
+    }
+
+    rec.onend = () => {
+      recognitionRef.current = null
+      setIsListening(false)
+      const text = transcriptRef.current.trim()
+      if (text) {
+        transcriptRef.current = ''
+        sendMessageRef.current(text)
+      }
+    }
+
+    rec.onerror = () => {
+      recognitionRef.current = null
+      setIsListening(false)
+    }
+
+    recognitionRef.current = rec
+    setIsListening(true)
+    rec.start()
+  }, [isListening, stopListening])
+
+  const sendMessage = useCallback(async (text: string) => {
+    if (!text.trim() || isStreaming) return
+    const userMsg: Message = { id: crypto.randomUUID(), role: 'user', content: text.trim(), timestamp: formatTime(new Date()) }
     setMessages(prev => [...prev, userMsg])
     setInput('')
     setIsStreaming(true)
@@ -113,166 +374,209 @@ export default function TutorRoomPage() {
     }))
 
     const aiMsgId = crypto.randomUUID()
-    setMessages(prev => [...prev, {
-      id: aiMsgId,
-      role: 'ai',
-      content: '',
-      timestamp: formatTime(new Date()),
-    }])
+    setMessages(prev => [...prev, { id: aiMsgId, role: 'ai', content: '', timestamp: formatTime(new Date()) }])
 
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ message: text.trim(), history, context: '' }),
+        body: JSON.stringify({ message: text.trim(), history }),
       })
-
-      if (res.status === 401) {
-        router.push('/login?reason=session_expired')
-        return
-      }
-
-      if (!res.ok || !res.body) {
-        const errText = await res.text().catch(() => '')
-        console.error('[tutor] API error:', res.status, errText)
-        throw new Error(`API returned ${res.status}`)
-      }
+      if (res.status === 401) { router.push('/login?reason=session_expired'); return }
+      if (!res.ok || !res.body) throw new Error(`API ${res.status}`)
 
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let accumulated = ''
-
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
         accumulated += decoder.decode(value, { stream: true })
-        setMessages(prev =>
-          prev.map(m => m.id === aiMsgId ? { ...m, content: accumulated } : m)
-        )
+        setMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, content: accumulated } : m))
+      }
+      // Speak the final response if voice is on
+      if (voiceOnRef.current && accumulated.trim()) {
+        speakText(accumulated)
       }
     } catch {
-      setMessages(prev =>
-        prev.map(m => m.id === aiMsgId
-          ? { ...m, content: 'Sorry, something went wrong. Please try again.' }
-          : m
-        )
-      )
+      setMessages(prev => prev.map(m =>
+        m.id === aiMsgId ? { ...m, content: 'Sorry, something went wrong. Please try again.' } : m
+      ))
     } finally {
       setIsStreaming(false)
     }
-  }
+  }, [isStreaming, messages, router, speakText])
+
+  /* Keep sendMessageRef up to date so STT onend can call it */
+  useEffect(() => { sendMessageRef.current = sendMessage }, [sendMessage])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault()
-      sendMessage(input)
-    }
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) }
   }
 
-  const clearChat = () => {
-    setMessages([])
-    setInput('')
-  }
+  const endSession = () => { setMessages([]); setInput('') }
 
   if (loading) return null
 
-  return (
-    <div className="relative flex flex-col h-[calc(100vh-7rem)] max-w-4xl mx-auto">
+  const toggleMic = () => {
+    if (micOn) { stopListening(); setMicOn(false) }
+    else setMicOn(true)
+  }
+  const toggleVoice = () => {
+    if (voiceOn) { window.speechSynthesis?.cancel(); setIsSpeaking(false) }
+    setVoiceOn(v => !v)
+  }
 
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-linear-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-md shadow-primary/20">
-            <Brain size={20} className="text-white" />
-          </div>
+  const avatarProps = { micOn, voiceOn, isSpeaking, onToggleMic: toggleMic, onToggleVoice: toggleVoice, activeFile }
+
+  return (
+    <div
+      className="flex overflow-hidden rounded-2xl relative"
+      style={{ height: 'calc(100vh - 6rem)', background: '#0F0F1A', boxShadow: '0 0 0 1px rgba(99,102,241,0.15), 0 24px 64px rgba(0,0,0,0.5)' }}
+    >
+      {/* ── LEFT: Avatar panel (desktop only) ── */}
+      <div
+        className="hidden lg:flex flex-col w-[40%] shrink-0 relative"
+        style={{ background: 'linear-gradient(180deg,#13122a 0%,#1a1840 100%)', borderRight: '1px solid rgba(139,92,246,0.25)' }}
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 pointer-events-none"
+          style={{ background: 'radial-gradient(circle at 100% 0%,rgba(99,102,241,0.12) 0%,transparent 70%)' }} />
+        <AvatarPanel {...avatarProps} />
+      </div>
+
+      {/* ── RIGHT: Chat panel ── */}
+      <div className="flex-1 flex flex-col min-w-0" style={{ background: '#16162a' }}>
+
+        {/* Tablet avatar bar */}
+        <div className="hidden md:flex lg:hidden flex-col">
+          <button onClick={() => setTabletExpanded(v => !v)}
+            className="flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors"
+            style={{ borderBottom: '1px solid rgba(99,102,241,0.15)' }}>
+            <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-white"
+              style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 0 10px rgba(99,102,241,0.4)' }}>M</div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-semibold text-white leading-tight">Maya – Your AI Tutor</p>
+              <p className="text-xs text-indigo-400 truncate">{activeFile ?? 'No resources loaded'}</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={e => { e.stopPropagation(); toggleMic() }}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all"
+                style={{ background: micOn ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.06)', border: micOn ? '1px solid rgba(16,185,129,0.4)' : '1px solid rgba(255,255,255,0.1)', color: micOn ? '#6ee7b7' : '#94a3b8', minWidth: 44, minHeight: 32 }}>
+                {micOn ? <Mic size={12} /> : <MicOff size={12} />}
+              </button>
+              <button
+                onClick={e => { e.stopPropagation(); toggleVoice() }}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium transition-all"
+                style={{ background: voiceOn ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.06)', border: voiceOn ? '1px solid rgba(14,165,233,0.4)' : '1px solid rgba(255,255,255,0.1)', color: voiceOn ? '#7dd3fc' : '#94a3b8', minWidth: 44, minHeight: 32 }}>
+                {voiceOn ? <Volume2 size={12} /> : <VolumeX size={12} />}
+              </button>
+            </div>
+            <ChevronDown size={16} className="text-slate-400 transition-transform duration-200"
+              style={{ transform: tabletExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+          </button>
+          <AnimatePresence>
+            {tabletExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }} animate={{ height: 320, opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className="overflow-hidden"
+                style={{ background: 'linear-gradient(180deg,#0F0F1A 0%,#12112B 100%)', borderBottom: '1px solid rgba(99,102,241,0.15)' }}>
+                <AvatarPanel {...avatarProps} />
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Chat header */}
+        <div className="flex items-center justify-between px-5 py-3 shrink-0"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
           <div>
-            <h1 className="text-lg font-bold text-secondary leading-tight">Tutor Room</h1>
-            <p className="text-xs text-gray-400">
+            <h1 className="text-base font-bold text-white leading-tight">Tutor Room</h1>
+            <p className="text-xs text-slate-400 mt-0.5">
               {messages.length === 0
-                ? 'Start a conversation'
+                ? 'Ask anything about your uploaded materials'
                 : `${messages.filter(m => m.role === 'user').length} question${messages.filter(m => m.role === 'user').length !== 1 ? 's' : ''} asked`}
             </p>
           </div>
+          <div className="flex items-center gap-2">
+            {messages.length > 0 && (
+              <button onClick={endSession}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-colors"
+                style={{ border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', minHeight: 36 }}>
+                <RotateCcw size={12} />End Session
+              </button>
+            )}
+            {/* Mobile ⋮ menu */}
+            <div className="relative sm:hidden">
+              <button onClick={() => setShowMobileMenu(v => !v)}
+                className="w-10 h-10 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition-colors">
+                <MoreVertical size={18} />
+              </button>
+              <AnimatePresence>
+                {showMobileMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-12 z-50 rounded-xl overflow-hidden py-1 min-w-[150px]"
+                    style={{ background: '#252545', border: '1px solid rgba(99,102,241,0.25)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+                    <button onClick={() => { endSession(); setShowMobileMenu(false) }}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors">
+                      <RotateCcw size={14} />End Session
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
         </div>
-        {messages.length > 0 && (
-          <button
-            onClick={clearChat}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all"
-          >
-            <RotateCcw size={12} />
-            New chat
-          </button>
-        )}
-      </div>
 
-      {/* Chat container */}
-      <div className="flex-1 flex flex-col bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-
-        {/* Messages area */}
-        <div
-          ref={scrollRef}
-          onScroll={handleScroll}
-          className="flex-1 overflow-y-auto px-6 py-6 space-y-5"
-        >
+        {/* Messages */}
+        <div ref={scrollRef} onScroll={handleScroll}
+          className="flex-1 overflow-y-auto px-4 md:px-6 py-5 space-y-4">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-8">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.4, ease: 'easeOut' }}
-              >
-                <div className="w-16 h-16 bg-linear-to-br from-primary to-accent rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg shadow-primary/20">
-                  <Sparkles size={28} className="text-white" />
+            <div className="flex flex-col items-center justify-center h-full text-center py-6">
+              <motion.div initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                transition={{ duration: 0.4, ease: 'easeOut' }} className="mb-6">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 8px 24px rgba(99,102,241,0.4)' }}>
+                  <Sparkles size={24} className="text-white" />
                 </div>
-                <h2 className="text-lg font-bold text-secondary mb-1">
-                  Hi {user?.user_metadata?.full_name?.split(' ')[0] || 'there'}, ready to learn? 👋
+                <h2 className="text-lg font-bold text-white mb-1">
+                  Hi {user?.user_metadata?.full_name?.split(' ')[0] || 'there'} 👋
                 </h2>
-                <p className="text-sm text-gray-400 max-w-sm mb-2">
-                  I answer questions <strong className="text-gray-500">only from your uploaded materials</strong>. Upload a document first, then ask me anything about it.
+                <p className="text-sm text-slate-300 max-w-xs mx-auto mb-1">
+                  I only answer from your <span className="text-violet-300 font-semibold">uploaded materials</span>.
                 </p>
-                <p className="text-xs text-gray-300 mb-8">
-                  No uploaded materials? Head to <span className="font-medium">Upload</span> to add your notes or textbooks.
-                </p>
+                <p className="text-xs text-slate-400">Upload a document first, then ask me anything about it.</p>
               </motion.div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
-                {SUGGESTED_PROMPTS.map((s, i) => {
-                  const Icon = s.icon
-                  return (
-                    <motion.button
-                      key={i}
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.1 + i * 0.08 }}
-                      onClick={() => sendMessage(s.prompt)}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100 text-left transition-all cursor-pointer ${s.bg}`}
-                    >
-                      <Icon size={16} className={`${s.color} shrink-0`} />
-                      <span className="text-sm font-medium text-secondary">{s.label}</span>
-                    </motion.button>
-                  )
-                })}
+              {/* Chips — horizontal scroll on mobile, grid on md+ */}
+              <div className="w-full max-w-lg overflow-x-auto pb-1">
+                <div className="flex gap-2 md:grid md:grid-cols-2 md:gap-3 min-w-max md:min-w-0 px-1">
+                  {SUGGESTED_PROMPTS.map((s, i) => {
+                    const Icon = s.icon
+                    return (
+                      <motion.button key={i}
+                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.1 + i * 0.07 }}
+                        onClick={() => sendMessage(s.prompt)}
+                        className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium text-left whitespace-nowrap md:whitespace-normal transition-all hover:scale-[1.02] active:scale-[0.98]"
+                        style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#c4b5fd', minHeight: 44 }}>
+                        <Icon size={15} className="shrink-0 text-indigo-400" />
+                        {s.label}
+                      </motion.button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           ) : (
             <>
               <AnimatePresence initial={false}>
-                {messages.map((msg) => (
-                  <motion.div
-                    key={msg.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25 }}
-                  >
-                    <ChatBubble
-                      role={msg.role}
-                      content={msg.content}
-                      timestamp={msg.timestamp}
-                      userInitial={userInitial}
-                      isTyping={msg.role === 'ai' && msg.content === '' && isStreaming}
-                    />
-                  </motion.div>
+                {messages.map(msg => (
+                  <DarkChatBubble key={msg.id} msg={msg} userInitial={userInitial}
+                    isStreamingThis={isStreaming && msg.id === messages[messages.length - 1]?.id && msg.role === 'ai'} />
                 ))}
               </AnimatePresence>
               <div ref={bottomRef} />
@@ -280,47 +584,107 @@ export default function TutorRoomPage() {
           )}
         </div>
 
-        {/* Scroll to bottom button */}
+        {/* Scroll to bottom */}
         <AnimatePresence>
           {showScrollBtn && (
             <motion.button
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
-              onClick={scrollToBottom}
-              className="absolute bottom-24 right-8 w-8 h-8 bg-white border border-gray-200 rounded-full shadow-md flex items-center justify-center text-gray-500 hover:text-primary hover:border-primary transition-all z-10"
-            >
+              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 6 }}
+              onClick={() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); setShowScrollBtn(false) }}
+              className="absolute bottom-24 right-6 w-9 h-9 rounded-full flex items-center justify-center z-10 hover:scale-110 transition-transform"
+              style={{ background: '#252545', border: '1px solid rgba(99,102,241,0.3)', boxShadow: '0 4px 12px rgba(0,0,0,0.4)', color: '#a5b4fc' }}>
               <ChevronDown size={16} />
             </motion.button>
           )}
         </AnimatePresence>
 
         {/* Input bar */}
-        <div className="border-t border-gray-100 px-4 py-3 bg-gray-50/50">
-          <div className="flex items-end gap-3">
-            <textarea
-              ref={textareaRef}
-              rows={1}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Ask your tutor anything… (Enter to send, Shift+Enter for new line)"
-              disabled={isStreaming}
-              className="flex-1 resize-none bg-white border border-gray-200 rounded-xl px-4 py-3 text-sm text-secondary placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all disabled:opacity-50 leading-relaxed"
-            />
+        <div className="shrink-0 px-4 md:px-5 py-3"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(15,15,26,0.9)', backdropFilter: 'blur(12px)' }}>
+          <div className="flex items-end gap-2 rounded-2xl px-3 py-2"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(99,102,241,0.2)' }}>
             <button
-              onClick={() => sendMessage(input)}
-              disabled={!input.trim() || isStreaming}
-              className="shrink-0 w-10 h-10 bg-primary hover:bg-primary-hover disabled:bg-gray-200 text-white rounded-xl flex items-center justify-center transition-all shadow-sm shadow-primary/20 disabled:shadow-none disabled:cursor-not-allowed"
-            >
+              onClick={startListening}
+              title={!micOn ? 'Enable mic in the controls above' : isListening ? 'Stop recording' : 'Start recording'}
+              className="shrink-0 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 relative"
+              style={{
+                background: isListening ? 'rgba(239,68,68,0.2)' : micOn ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.05)',
+                color: isListening ? '#fca5a5' : micOn ? '#6ee7b7' : '#475569',
+                border: isListening ? '1px solid rgba(239,68,68,0.4)' : 'none',
+                minWidth: 44, minHeight: 44, width: 44, height: 44,
+                boxShadow: isListening ? '0 0 12px rgba(239,68,68,0.3)' : 'none',
+              }}>
+              {isListening ? (
+                <>
+                  <motion.div
+                    animate={{ scale: [1, 1.6, 1], opacity: [0.6, 0, 0.6] }}
+                    transition={{ duration: 1.2, repeat: Infinity }}
+                    className="absolute inset-0 rounded-xl bg-red-500/20 pointer-events-none"
+                  />
+                  <Mic size={17} />
+                </>
+              ) : micOn ? <Mic size={17} /> : <MicOff size={17} />}
+            </button>
+            <textarea
+              ref={textareaRef} rows={1} value={input}
+              onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
+              placeholder="Ask a question..." disabled={isStreaming}
+              className="flex-1 resize-none bg-transparent text-white placeholder-slate-500 focus:outline-none disabled:opacity-50 leading-relaxed py-2.5"
+              style={{ fontSize: 16 }} />
+            <button onClick={() => sendMessage(input)} disabled={!input.trim() || isStreaming}
+              className="shrink-0 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+              style={{
+                background: input.trim() && !isStreaming ? 'linear-gradient(135deg,#FF6B6B,#ee5555)' : 'rgba(255,255,255,0.06)',
+                color: 'white', minWidth: 44, minHeight: 44, width: 44, height: 44,
+                boxShadow: input.trim() && !isStreaming ? '0 4px 12px rgba(255,107,107,0.35)' : 'none',
+              }}>
               <Send size={16} />
             </button>
           </div>
-          <p className="mt-1.5 text-[10px] text-gray-400 text-center">
-            AI can make mistakes — always verify important information.
+          <p className="mt-1.5 text-center text-[10px] text-slate-400">
+            Answers are based solely on your uploaded documents.
           </p>
         </div>
       </div>
+
+      {/* ── Mobile: floating Maya button ── */}
+      <motion.button
+        className="md:hidden fixed bottom-28 left-4 z-50 w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-sm"
+        style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 0 0 3px rgba(99,102,241,0.25),0 8px 24px rgba(99,102,241,0.5)' }}
+        onClick={() => setShowMobileAvatar(true)}
+        whileTap={{ scale: 0.92 }}
+        animate={{ boxShadow: ['0 0 0 3px rgba(99,102,241,0.25),0 8px 24px rgba(99,102,241,0.5)','0 0 0 7px rgba(99,102,241,0.08),0 8px 24px rgba(99,102,241,0.5)','0 0 0 3px rgba(99,102,241,0.25),0 8px 24px rgba(99,102,241,0.5)'] }}
+        transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}>
+        M
+      </motion.button>
+
+      {/* ── Mobile: bottom sheet ── */}
+      <AnimatePresence>
+        {showMobileAvatar && (
+          <>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setShowMobileAvatar(false)}
+              className="md:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
+            <motion.div
+              initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              drag="y" dragConstraints={{ top: 0 }}
+              onDragEnd={(_, info) => { if (info.offset.y > 80) setShowMobileAvatar(false) }}
+              className="md:hidden fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden"
+              style={{ height: '55vh', background: 'linear-gradient(180deg,#0F0F1A 0%,#12112B 100%)', border: '1px solid rgba(99,102,241,0.2)', borderBottom: 'none' }}>
+              <div className="flex justify-center pt-3 pb-1">
+                <div className="w-10 h-1 rounded-full bg-white/20" />
+              </div>
+              <button onClick={() => setShowMobileAvatar(false)}
+                className="absolute top-4 right-4 w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <X size={14} />
+              </button>
+              <AvatarPanel {...avatarProps} />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
+

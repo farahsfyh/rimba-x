@@ -72,7 +72,7 @@ This checklist tracks the development progress of RimbaX AI Tutor, a free AI-pow
 - [x] Implement embedding generation function
 - [x] Create vector storage in Supabase
 - [x] Build similarity search function
-- [ ] Test vector retrieval accuracy
+- [x] Test vector retrieval accuracy
 - [x] Implement context assembly for prompts
 - [x] Wire RAG into tutor chat (live context from user documents)
 
@@ -335,8 +335,8 @@ This checklist tracks the development progress of RimbaX AI Tutor, a free AI-pow
 
 ## 🎯 Current Status
 
-**Phase:** 2 - Core Features (in progress)
+**Phase:** 2 - Core Features (complete)
 **Week:** 4
-**Completed:** ~75%
+**Completed:** ~85%
 
 Last Updated: February 28, 2026

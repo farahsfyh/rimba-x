@@ -20,7 +20,7 @@
     "date-fns": "^4.1.0",
     "express-rate-limit": "^8.2.1",
     "framer-motion": "^12.34.0",
-    "lucide-react": "^0.473.0",
+    "lucide-react": "^0.575.0",
     "mammoth": "^1.11.0",
     "next": "16.1.6",
     "pdf-parse": "^2.4.5",
