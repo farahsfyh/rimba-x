@@ -80,6 +80,11 @@ export async function verifyFileSignature(file: File): Promise<boolean> {
     return bytes[0] === 0x50 && bytes[1] === 0x4B;
   }
   
+  // Legacy XLS: OLE2 Compound Document (D0 CF 11 E0)
+  if (file.type === 'application/vnd.ms-excel') {
+    return bytes[0] === 0xD0 && bytes[1] === 0xCF && bytes[2] === 0x11 && bytes[3] === 0xE0;
+  }
+
   // Plain text files don't have magic numbers
   if (file.type === 'text/plain') {
     return true;

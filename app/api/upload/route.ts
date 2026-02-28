@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { parsePDF, parseDOCX, parseTXT, parseXLSX } from '@/lib/parsers'
 import { generateEmbedding } from '@/lib/ai/embeddings'
 import { checkRateLimit, getClientIp, UPLOAD_LIMIT } from '@/lib/security/rate-limit'
+import { verifyFileSignature } from '@/lib/security/validation'
 
 const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024  // 20 MB
 const ALLOWED_MIME_TYPES = new Set([
@@ -58,6 +59,12 @@ export async function POST(request: NextRequest) {
   // Validate MIME type against allowlist
   if (!ALLOWED_MIME_TYPES.has(file.type)) {
     return NextResponse.json({ error: `File type '${file.type}' is not supported.` }, { status: 400 })
+  }
+
+  // Verify file magic numbers match claimed MIME type (prevents content-type spoofing)
+  const signatureValid = await verifyFileSignature(file)
+  if (!signatureValid) {
+    return NextResponse.json({ error: 'File content does not match the expected file type.' }, { status: 400 })
   }
 
   try {

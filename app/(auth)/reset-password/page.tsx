@@ -8,35 +8,37 @@ import { Input } from '@/components/ui/Input'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'react-hot-toast'
 
-export default function LoginPage() {
+export default function ResetPasswordPage() {
   const router = useRouter()
   const supabase = createClient()
   const [loading, setLoading] = useState(false)
-  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirm, setConfirm] = useState('')
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (password !== confirm) {
+      toast.error('Passwords do not match')
+      return
+    }
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters')
+      return
+    }
+
     setLoading(true)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
+      const { error } = await supabase.auth.updateUser({ password })
       if (error) {
         toast.error(error.message)
       } else {
-        // Ensure user progress/stats rows exist (idempotent)
-        await fetch('/api/init-user', { method: 'POST', credentials: 'include' }).catch(() => null)
-        toast.success('Logged in successfully!')
-        router.push('/dashboard')
-        router.refresh()
+        toast.success('Password updated successfully!')
+        router.push('/login')
       }
-    } catch (err) {
+    } catch {
       toast.error('An unexpected error occurred')
-      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -52,48 +54,41 @@ export default function LoginPage() {
         <h1 className="text-2xl font-bold text-secondary tracking-tight">
           Rimba<span className="text-primary">X</span>
         </h1>
-        <p className="mt-1 text-sm text-text-muted">Sign in to your account</p>
+        <p className="mt-1 text-sm text-text-muted">Create a new password</p>
       </div>
 
       {/* Card */}
       <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
-        <form className="flex flex-col gap-5" onSubmit={handleLogin}>
+        <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
           <Input
-            label="Email"
-            type="email"
-            placeholder="you@example.com"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <Input
-            label="Password"
+            label="New Password"
             type="password"
             placeholder="••••••••"
-            autoComplete="current-password"
+            autoComplete="new-password"
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-
-          <div className="text-right -mt-2">
-            <Link href="/forgot-password" className="text-xs text-primary hover:underline">
-              Forgot password?
-            </Link>
-          </div>
-
+          <Input
+            label="Confirm Password"
+            type="password"
+            placeholder="••••••••"
+            autoComplete="new-password"
+            required
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+          />
           <Button type="submit" className="w-full" loading={loading}>
-            Sign In
+            Update Password
           </Button>
         </form>
       </div>
 
       {/* Footer link */}
       <p className="mt-5 text-center text-sm text-text-muted">
-        Don&apos;t have an account?{' '}
-        <Link href="/signup" className="text-primary font-bold hover:underline">
-          Sign up
+        Remembered your password?{' '}
+        <Link href="/login" className="text-primary font-bold hover:underline">
+          Sign in
         </Link>
       </p>
     </div>
