@@ -1,10 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 import type { UserProgress, UserStats, Achievement, UserAchievement } from '@/types';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+// Lazy-init: only created when a DB function is called (server-side).
+// Avoids crashing client imports that only use pure utility exports.
+let _supabase: ReturnType<typeof createClient> | null = null;
+function getSupabase() {
+  if (!_supabase) {
+    _supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    );
+  }
+  return _supabase;
+}
 
 /**
  * XP rewards for different actions
@@ -58,7 +66,7 @@ export async function awardXP(
   reason: string
 ): Promise<{ newXP: number; newLevel: number; leveledUp: boolean }> {
   // Get current progress
-  const { data: progress } = await supabase
+  const { data: progress } = await getSupabase()
     .from('user_progress')
     .select('*')
     .eq('user_id', userId)
@@ -74,7 +82,7 @@ export async function awardXP(
   const leveledUp = newLevel > oldLevel;
   
   // Update progress
-  await supabase
+  await getSupabase()
     .from('user_progress')
     .update({
       xp: newXP,
@@ -95,7 +103,7 @@ export async function updateStreak(userId: string): Promise<{
   streakMaintained: boolean;
   xpAwarded: number;
 }> {
-  const { data: progress } = await supabase
+  const { data: progress } = await getSupabase()
     .from('user_progress')
     .select('*')
     .eq('user_id', userId)
@@ -139,7 +147,7 @@ export async function updateStreak(userId: string): Promise<{
   }
   
   // Update streak and last active date
-  await supabase
+  await getSupabase()
     .from('user_progress')
     .update({
       streak: newStreak,
@@ -165,13 +173,13 @@ function getDaysDifference(date1: string, date2: string): number {
  */
 export async function checkAchievements(userId: string): Promise<Achievement[]> {
   // Get user progress and stats
-  const { data: progress } = await supabase
+  const { data: progress } = await getSupabase()
     .from('user_progress')
     .select('*')
     .eq('user_id', userId)
     .single();
   
-  const { data: stats } = await supabase
+  const { data: stats } = await getSupabase()
     .from('user_stats')
     .select('*')
     .eq('user_id', userId)
@@ -182,7 +190,7 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
   }
   
   // Get already unlocked achievements
-  const { data: unlocked } = await supabase
+  const { data: unlocked } = await getSupabase()
     .from('user_achievements')
     .select('achievement_id')
     .eq('user_id', userId);
@@ -263,7 +271,7 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
   for (const achievement of achievementChecks) {
     if (achievement.condition && !unlockedIds.has(achievement.id)) {
       // Award achievement
-      await supabase.from('user_achievements').insert({
+      await getSupabase().from('user_achievements').insert({
         user_id: userId,
         achievement_id: achievement.id,
       });
@@ -289,7 +297,7 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
  */
 export async function initializeUserProgress(userId: string): Promise<void> {
   // Create user_progress
-  await supabase.from('user_progress').insert({
+  await getSupabase().from('user_progress').insert({
     user_id: userId,
     level: 1,
     xp: 0,
@@ -298,7 +306,7 @@ export async function initializeUserProgress(userId: string): Promise<void> {
   });
   
   // Create user_stats
-  await supabase.from('user_stats').insert({
+  await getSupabase().from('user_stats').insert({
     user_id: userId,
     total_sessions: 0,
     total_questions: 0,
@@ -322,7 +330,7 @@ export async function updateStats(
     study_time: number;
   }>
 ): Promise<void> {
-  const { data: currentStats } = await supabase
+  const { data: currentStats } = await getSupabase()
     .from('user_stats')
     .select('*')
     .eq('user_id', userId)
@@ -340,7 +348,7 @@ export async function updateStats(
     updated_at: new Date().toISOString(),
   };
   
-  await supabase
+  await getSupabase()
     .from('user_stats')
     .update(updatedStats)
     .eq('user_id', userId);
