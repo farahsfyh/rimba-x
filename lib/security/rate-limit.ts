@@ -1,59 +1,77 @@
-import rateLimit from 'express-rate-limit';
+/**
+ * Next.js App Router compatible rate limiter.
+ * express-rate-limit only works in Express pipelines — this replaces it
+ * with a lightweight in-memory Map that works in Next.js Node runtime.
+ *
+ * NOTE: For multi-instance deployments swap the Map for a Redis store.
+ */
+
+interface RateLimitEntry {
+  count: number
+  reset: number   // epoch ms when the window resets
+}
+
+const stores: Record<string, Map<string, RateLimitEntry>> = {}
+
+function getStore(name: string): Map<string, RateLimitEntry> {
+  if (!stores[name]) stores[name] = new Map()
+  return stores[name]
+}
+
+export interface RateLimitOptions {
+  /** Unique name for this limiter (keeps separate counters per limiter) */
+  name: string
+  /** Max requests per window */
+  max: number
+  /** Window length in milliseconds */
+  windowMs: number
+}
 
 /**
- * General API rate limiter
- * Allows 100 requests per 15 minutes per IP
+ * Returns allowed=true if under the limit, false if exceeded.
+ * Pass the client IP (or any stable per-user identifier).
  */
-export const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
-  message: {
-    error: 'Too many requests from this IP, please try again later.',
-  },
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  skipSuccessfulRequests: false,
-});
+export function checkRateLimit(
+  identifier: string,
+  options: RateLimitOptions
+): { allowed: boolean; remaining: number; resetInMs: number } {
+  const store = getStore(options.name)
+  const now = Date.now()
 
-/**
- * Strict rate limiter for auth endpoints
- * Allows 5 requests per 15 minutes per IP
- */
-export const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 requests per windowMs
-  message: {
-    error: 'Too many authentication attempts, please try again later.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-  skipSuccessfulRequests: true, // Don't count successful requests
-});
+  let entry = store.get(identifier)
+  if (!entry || now > entry.reset) {
+    entry = { count: 1, reset: now + options.windowMs }
+    store.set(identifier, entry)
+    return { allowed: true, remaining: options.max - 1, resetInMs: options.windowMs }
+  }
 
-/**
- * File upload rate limiter
- * Allows 10 uploads per hour
- */
-export const uploadLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 1 hour
-  max: 10,
-  message: {
-    error: 'Too many file uploads, please try again later.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+  entry.count++
+  const remaining = Math.max(0, options.max - entry.count)
+  const resetInMs = entry.reset - now
 
-/**
- * AI chat rate limiter
- * Allows 50 messages per 15 minutes
- */
-export const chatLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50,
-  message: {
-    error: 'Too many chat messages, please wait before sending more.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+  if (entry.count > options.max) {
+    return { allowed: false, remaining: 0, resetInMs }
+  }
+  return { allowed: true, remaining, resetInMs }
+}
+
+/** Helper: extract best-effort client IP from a NextRequest */
+export function getClientIp(req: { headers: { get(k: string): string | null } }): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0].trim() ??
+    req.headers.get('x-real-ip') ??
+    'unknown'
+  )
+}
+
+// ── Pre-configured limiters ──────────────────────────────────────────────
+/** General API — 100 req / 15 min */
+export const API_LIMIT: RateLimitOptions     = { name: 'api',    max: 100, windowMs: 15 * 60 * 1000 }
+/** Auth endpoints — 10 req / 15 min */
+export const AUTH_LIMIT: RateLimitOptions    = { name: 'auth',   max: 10,  windowMs: 15 * 60 * 1000 }
+/** File uploads — 10 req / hour */
+export const UPLOAD_LIMIT: RateLimitOptions  = { name: 'upload', max: 10,  windowMs: 60 * 60 * 1000 }
+/** AI chat — 50 req / 15 min */
+export const CHAT_LIMIT: RateLimitOptions    = { name: 'chat',   max: 50,  windowMs: 15 * 60 * 1000 }
+/** TTS — 60 req / 15 min */
+export const TTS_LIMIT: RateLimitOptions     = { name: 'tts',    max: 60,  windowMs: 15 * 60 * 1000 }

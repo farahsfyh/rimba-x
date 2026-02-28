@@ -3,6 +3,16 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { parsePDF, parseDOCX, parseTXT, parseXLSX } from '@/lib/parsers'
 import { generateEmbedding } from '@/lib/ai/embeddings'
+import { checkRateLimit, getClientIp, UPLOAD_LIMIT } from '@/lib/security/rate-limit'
+
+const MAX_FILE_SIZE_BYTES = 20 * 1024 * 1024  // 20 MB
+const ALLOWED_MIME_TYPES = new Set([
+  'application/pdf',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.ms-excel',
+  'text/plain',
+])
 
 export const runtime = 'nodejs'
 
@@ -34,6 +44,21 @@ export async function POST(request: NextRequest) {
   const subject = (formData.get('subject') as string | null) || null
 
   if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+
+  // Rate limit by IP (formData parsed before auth check, so use IP here)
+  const ip = getClientIp(request)
+  const { allowed } = checkRateLimit(ip, UPLOAD_LIMIT)
+  if (!allowed) return NextResponse.json({ error: 'Too many uploads. Please try again later.' }, { status: 429 })
+
+  // Validate file size before reading into memory
+  if (file.size > MAX_FILE_SIZE_BYTES) {
+    return NextResponse.json({ error: `File too large. Maximum size is 20 MB.` }, { status: 400 })
+  }
+
+  // Validate MIME type against allowlist
+  if (!ALLOWED_MIME_TYPES.has(file.type)) {
+    return NextResponse.json({ error: `File type '${file.type}' is not supported.` }, { status: 400 })
+  }
 
   try {
     // 1. Upload raw file to Supabase Storage

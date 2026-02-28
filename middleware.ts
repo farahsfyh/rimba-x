@@ -59,6 +59,7 @@ export async function middleware(request: NextRequest) {
         supabaseResponse.cookies.set('last_activity', String(now), {
             httpOnly: true,
             sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
             maxAge: SESSION_TIMEOUT_MS / 1000,
         })
     }

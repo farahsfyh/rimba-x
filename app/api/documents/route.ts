@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, getClientIp, API_LIMIT } from '@/lib/security/rate-limit'
 
 export const runtime = 'nodejs'
 
@@ -10,8 +11,12 @@ const getServiceClient = () =>
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const ip = getClientIp(request)
+    const { allowed } = checkRateLimit(ip, API_LIMIT)
+    if (!allowed) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 })
+
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError) console.error('[documents] auth error:', authError.message)
@@ -31,7 +36,7 @@ export async function GET() {
     return NextResponse.json({ documents: data })
   } catch (e) {
     console.error('[documents] GET uncaught:', e)
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: 'An internal error occurred.' }, { status: 500 })
   }
 }
 

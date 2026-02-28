@@ -2,6 +2,9 @@ import { createClient } from '@/lib/supabase/server'
 import { generateStreamingResponse } from '@/lib/ai/gemini'
 import { assembleContext } from '@/lib/ai/rag'
 import { NextRequest } from 'next/server'
+import { checkRateLimit, CHAT_LIMIT } from '@/lib/security/rate-limit'
+
+const MAX_MESSAGE_LENGTH = 4000
 
 export const runtime = 'nodejs'
 
@@ -29,6 +32,18 @@ export async function POST(request: NextRequest) {
 
     if (!message || typeof message !== 'string') {
         return new Response(JSON.stringify({ error: 'Message is required' }), { status: 400 })
+    }
+    if (message.length > MAX_MESSAGE_LENGTH) {
+        return new Response(JSON.stringify({ error: 'Message too long' }), { status: 400 })
+    }
+
+    // Rate limit per authenticated user
+    const { allowed } = checkRateLimit(user.id, CHAT_LIMIT)
+    if (!allowed) {
+        return new Response(
+            JSON.stringify({ error: 'Too many messages. Please wait a moment before sending more.' }),
+            { status: 429, headers: { 'Content-Type': 'application/json' } }
+        )
     }
 
     // Retrieve relevant context from the user's uploaded documents via RAG

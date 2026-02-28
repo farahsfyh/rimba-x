@@ -1,10 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 import { generateEmbedding } from './embeddings';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // Server-side only
-);
+// Lazy-init: only instantiated when a DB function is called (always server-side).
+// Prevents crashes if this module is ever imported in a client bundle.
+let _supabase: ReturnType<typeof createClient> | null = null
+function getSupabase() {
+  if (!_supabase) {
+    _supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+  }
+  return _supabase
+}
 
 /**
  * Store document chunks with embeddings in Supabase
@@ -18,7 +26,7 @@ export async function storeDocumentChunks(
     const chunk = chunks[i];
     const embedding = await generateEmbedding(chunk);
     
-    const { error } = await supabase.from('document_embeddings').insert({
+    const { error } = await getSupabase().from('document_embeddings').insert({
       user_id: userId,
       document_id: documentId,
       chunk_index: i,
@@ -49,7 +57,7 @@ export async function findRelevantChunks(
   
   // Use Supabase function for similarity search
   // threshold 0.4: broad enough to catch paraphrased questions, strict enough to exclude noise
-  const { data, error } = await supabase.rpc('match_documents', {
+  const { data, error } = await getSupabase().rpc('match_documents', {
     query_embedding: queryEmbedding,
     match_threshold: 0.4,
     match_count: topK,
@@ -90,7 +98,7 @@ export async function assembleContext(
 export async function deleteDocumentEmbeddings(
   documentId: string
 ): Promise<void> {
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from('document_embeddings')
     .delete()
     .eq('document_id', documentId);
@@ -107,7 +115,7 @@ export async function deleteDocumentEmbeddings(
 export async function getDocumentChunkCount(
   documentId: string
 ): Promise<number> {
-  const { count, error } = await supabase
+  const { count, error } = await getSupabase()
     .from('document_embeddings')
     .select('*', { count: 'exact', head: true })
     .eq('document_id', documentId);
