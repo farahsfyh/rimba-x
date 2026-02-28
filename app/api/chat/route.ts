@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { generateStreamingResponse } from '@/lib/ai/gemini'
+import { generateStreamingResponse, DEFAULT_TUTOR_SETTINGS, type TutorSettings } from '@/lib/ai/gemini'
 import { assembleContext } from '@/lib/ai/rag'
 import { NextRequest } from 'next/server'
 import { checkRateLimit, CHAT_LIMIT } from '@/lib/security/rate-limit'
@@ -56,6 +56,26 @@ export async function POST(request: NextRequest) {
     }
     if (message.length > MAX_MESSAGE_LENGTH) {
         return new Response(JSON.stringify({ error: 'Message too long' }), { status: 400 })
+    }
+
+    // Extract and validate tutor settings (safe defaults for anything invalid/missing)
+    const VALID_MODES = ['focused', 'balanced', 'exploratory'] as const
+    const VALID_TONES = ['warm', 'professional', 'casual'] as const
+    const rawSettings = body.settings as Record<string, unknown> | undefined
+    const teachingMode = VALID_MODES.includes(rawSettings?.teachingMode as never)
+        ? rawSettings!.teachingMode as TutorSettings['teachingMode']
+        : DEFAULT_TUTOR_SETTINGS.teachingMode
+    const voiceTone = VALID_TONES.includes(rawSettings?.voiceTone as never)
+        ? rawSettings!.voiceTone as TutorSettings['voiceTone']
+        : DEFAULT_TUTOR_SETTINGS.voiceTone
+    const rawFocusTitles: unknown[] = Array.isArray(body.focusDocumentTitles) ? body.focusDocumentTitles : []
+    const focusDocumentTitles = rawFocusTitles
+        .filter((t): t is string => typeof t === 'string' && t.length <= 200)
+        .slice(0, 20)
+    const tutorSettings: TutorSettings = {
+        teachingMode,
+        voiceTone,
+        focusDocumentTitles: focusDocumentTitles.length > 0 ? focusDocumentTitles : undefined,
     }
 
     // Rate limit per authenticated user
@@ -124,7 +144,7 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
         async start(controller) {
             try {
-                const generator = generateStreamingResponse(message, context, history)
+                const generator = generateStreamingResponse(message, context, history, tutorSettings)
                 for await (const chunk of generator) {
                     controller.enqueue(encoder.encode(chunk))
                 }

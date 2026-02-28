@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
+import ReactMarkdown from 'react-markdown'
 import { useUser } from '@/lib/hooks/useUser'
 import {
   Send,
@@ -19,6 +20,7 @@ import {
   FileText,
   MoreVertical,
   X,
+  Settings,
 } from 'lucide-react'
 
 /* ─── Types ─────────────────────────────────────────────── */
@@ -28,6 +30,11 @@ interface Message {
   content: string
   timestamp: string
 }
+interface DocumentInfo { id: string; filename: string; title?: string | null }
+type TeachingMode = 'focused' | 'balanced' | 'exploratory'
+type VoiceTone    = 'warm' | 'professional' | 'casual'
+interface TutorSettings { teachingMode: TeachingMode; voiceTone: VoiceTone; focusDocumentIds: string[] }
+const DEFAULT_SETTINGS: TutorSettings = { teachingMode: 'balanced', voiceTone: 'warm', focusDocumentIds: [] }
 
 /* ─── Constants ─────────────────────────────────────────── */
 const SUGGESTED_PROMPTS = [
@@ -39,6 +46,23 @@ const SUGGESTED_PROMPTS = [
 
 function formatTime(d: Date) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
+
+/* Strip markdown syntax for clean TTS audio — no "asterisk asterisk" read aloud */
+function stripMarkdown(text: string): string {
+  return text
+    .replace(/#{1,6}\s+/g, '')           // headings
+    .replace(/\*\*(.+?)\*\*/g, '$1')      // bold
+    .replace(/\*(.+?)\*/g, '$1')          // italic
+    .replace(/__(.+?)__/g, '$1')          // bold alt
+    .replace(/_(.+?)_/g, '$1')            // italic alt
+    .replace(/`{1,3}[^`]*`{1,3}/g, '')   // code
+    .replace(/^[-*+]\s+/gm, '')          // unordered list bullets
+    .replace(/^\d+\.\s+/gm, '')          // ordered list numbers
+    .replace(/^>\s+/gm, '')              // blockquotes
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links
+    .replace(/\n{3,}/g, '\n\n')          // collapse excess newlines
+    .trim()
 }
 
 /* Find first speech-ready boundary in a text chunk.
@@ -262,7 +286,20 @@ function DarkChatBubble({ msg, userInitial, isStreamingThis }: {
             ))}
           </div>
         ) : (
-          <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+          isUser ? (
+            <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+          ) : (
+            <div className="prose prose-invert prose-sm max-w-none
+              [&>p]:mb-2 [&>p:last-child]:mb-0
+              [&>ol]:mt-1 [&>ol]:mb-2 [&>ol]:pl-4 [&>ol>li]:mb-1
+              [&>ul]:mt-1 [&>ul]:mb-2 [&>ul]:pl-4 [&>ul>li]:mb-1
+              [&>h2]:text-sm [&>h2]:font-semibold [&>h2]:text-indigo-300 [&>h2]:mt-2 [&>h2]:mb-1
+              [&>h3]:text-xs [&>h3]:font-semibold [&>h3]:text-slate-300 [&>h3]:mt-1.5 [&>h3]:mb-0.5
+              [&_strong]:text-white [&_strong]:font-semibold
+              [&_em]:text-slate-300 [&_em]:not-italic [&_em]:font-medium">
+              <ReactMarkdown>{msg.content}</ReactMarkdown>
+            </div>
+          )
         )}
         {msg.timestamp && (
           <p className={`mt-1.5 text-right text-[10px] ${isUser ? 'text-red-200' : 'text-slate-500'}`}>
@@ -271,6 +308,139 @@ function DarkChatBubble({ msg, userInitial, isStreamingThis }: {
         )}
       </div>
     </motion.div>
+  )
+}
+
+/* ─── Settings Modal ────────────────────────────────────── */
+function SettingsModal({
+  open, onClose, settings, onSettings, documents,
+}: {
+  open: boolean
+  onClose: () => void
+  settings: TutorSettings
+  onSettings: (s: TutorSettings) => void
+  documents: DocumentInfo[]
+}) {
+  const modeOptions: Array<{ value: TeachingMode; label: string; desc: string }> = [
+    { value: 'focused',     label: 'Focused',     desc: 'Strictly from your materials' },
+    { value: 'balanced',    label: 'Balanced',    desc: 'Materials + helpful analogies when stuck' },
+    { value: 'exploratory', label: 'Exploratory', desc: 'Broader context & real-world bridging' },
+  ]
+  const toneOptions: Array<{ value: VoiceTone; label: string; desc: string }> = [
+    { value: 'warm',         label: 'Warm',         desc: 'Encouraging & collaborative' },
+    { value: 'professional', label: 'Professional', desc: 'Direct & measured, like a lecturer' },
+    { value: 'casual',       label: 'Casual',       desc: 'Relaxed, like a smart study buddy' },
+  ]
+  const allSelected = settings.focusDocumentIds.length === 0
+  const toggleDoc = (id: string) => {
+    const cur = settings.focusDocumentIds
+    onSettings({ ...settings, focusDocumentIds: cur.includes(id) ? cur.filter(d => d !== id) : [...cur, id] })
+  }
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 8 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-sm rounded-2xl overflow-hidden"
+            style={{ background: '#1a1836', border: '1px solid rgba(139,92,246,0.3)', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}
+          >
+            <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <h3 className="text-sm font-semibold text-white">Tutor Settings</h3>
+              <button onClick={onClose}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-400 hover:text-white transition-colors"
+                style={{ background: 'rgba(255,255,255,0.06)' }}>
+                <X size={14} />
+              </button>
+            </div>
+            <div className="px-5 py-4 space-y-5 overflow-y-auto" style={{ maxHeight: '70vh' }}>
+              {/* Teaching Mode */}
+              <div>
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Teaching Mode</p>
+                <div className="space-y-2">
+                  {modeOptions.map(opt => (
+                    <button key={opt.value} onClick={() => onSettings({ ...settings, teachingMode: opt.value })}
+                      className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left transition-all"
+                      style={{
+                        background: settings.teachingMode === opt.value ? 'rgba(99,102,241,0.18)' : 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${settings.teachingMode === opt.value ? 'rgba(99,102,241,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                      }}>
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: settings.teachingMode === opt.value ? '#c4b5fd' : '#e2e8f0' }}>{opt.label}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                      </div>
+                      {settings.teachingMode === opt.value && <div className="w-2 h-2 rounded-full bg-indigo-400 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Voice Tone */}
+              <div>
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Voice Tone</p>
+                <div className="space-y-2">
+                  {toneOptions.map(opt => (
+                    <button key={opt.value} onClick={() => onSettings({ ...settings, voiceTone: opt.value })}
+                      className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left transition-all"
+                      style={{
+                        background: settings.voiceTone === opt.value ? 'rgba(139,92,246,0.18)' : 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${settings.voiceTone === opt.value ? 'rgba(139,92,246,0.5)' : 'rgba(255,255,255,0.08)'}`,
+                      }}>
+                      <div>
+                        <p className="text-sm font-medium" style={{ color: settings.voiceTone === opt.value ? '#ddd6fe' : '#e2e8f0' }}>{opt.label}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{opt.desc}</p>
+                      </div>
+                      {settings.voiceTone === opt.value && <div className="w-2 h-2 rounded-full bg-violet-400 shrink-0" />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {/* Material Focus */}
+              {documents.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5">Focus Materials</p>
+                  <div className="space-y-2">
+                    <button onClick={() => onSettings({ ...settings, focusDocumentIds: [] })}
+                      className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left transition-all"
+                      style={{
+                        background: allSelected ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)',
+                        border: `1px solid ${allSelected ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                      }}>
+                      <p className="text-sm font-medium" style={{ color: allSelected ? '#6ee7b7' : '#e2e8f0' }}>All Materials</p>
+                      {allSelected && <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />}
+                    </button>
+                    {documents.map(doc => {
+                      const sel = settings.focusDocumentIds.includes(doc.id)
+                      return (
+                        <button key={doc.id} onClick={() => toggleDoc(doc.id)}
+                          className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left transition-all"
+                          style={{
+                            background: sel ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.04)',
+                            border: `1px solid ${sel ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}`,
+                          }}>
+                          <p className="text-sm font-medium truncate pr-2" style={{ color: sel ? '#6ee7b7' : '#e2e8f0' }}>{doc.title || doc.filename}</p>
+                          {sel && <div className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" />}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  {settings.focusDocumentIds.length > 0 && (
+                    <p className="text-[10px] text-slate-500 mt-2">Maya will prioritise these documents. Search still covers all your materials.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
   )
 }
 
@@ -293,6 +463,9 @@ export default function TutorRoomPage() {
   const [isListening, setIsListening]             = useState(false)
   const [isThinking, setIsThinking]               = useState(false)
   const [liveMode, setLiveMode]                   = useState(false)
+  const [tutorSettings, setTutorSettings]         = useState<TutorSettings>(DEFAULT_SETTINGS)
+  const [documents, setDocuments]                 = useState<DocumentInfo[]>([])
+  const [showSettings, setShowSettings]           = useState(false)
 
   const bottomRef      = useRef<HTMLDivElement>(null)
   const scrollRef      = useRef<HTMLDivElement>(null)
@@ -315,6 +488,8 @@ export default function TutorRoomPage() {
   const bargeInAnalyserRef  = useRef<AnalyserNode | null>(null)
   const bargeInStreamRef    = useRef<MediaStream | null>(null)
   const bargeInFrameRef     = useRef<number>(0)
+  const settingsRef         = useRef<TutorSettings>(DEFAULT_SETTINGS)
+  const documentsRef        = useRef<DocumentInfo[]>([])
 
   const userInitial = (user?.user_metadata?.full_name || user?.email || 'U').charAt(0).toUpperCase()
 
@@ -323,6 +498,8 @@ export default function TutorRoomPage() {
   useEffect(() => { liveModeRef.current = liveMode }, [liveMode])
   useEffect(() => { isStreamingRef.current = isStreaming }, [isStreaming])
   useEffect(() => { isSpeakingRef.current = isSpeaking }, [isSpeaking])
+  useEffect(() => { settingsRef.current = tutorSettings }, [tutorSettings])
+  useEffect(() => { documentsRef.current = documents }, [documents])
 
   /* Cancel TTS when voice is turned off */
   useEffect(() => {
@@ -373,11 +550,16 @@ export default function TutorRoomPage() {
     }
   }, [])
 
-  /* Load first active file name */
+  /* Load documents for material selector */
   useEffect(() => {
     fetch('/api/documents')
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.documents?.length) setActiveFile(d.documents[0].filename) })
+      .then(d => {
+        if (d?.documents?.length) {
+          setDocuments(d.documents)
+          setActiveFile(d.documents[0].filename)
+        }
+      })
       .catch(() => {})
   }, [])
 
@@ -819,11 +1001,21 @@ export default function TutorRoomPage() {
     setMessages(prev => [...prev, { id: aiMsgId, role: 'ai', content: '', timestamp: formatTime(new Date()) }])
 
     try {
+      const focusDocumentTitles = settingsRef.current.focusDocumentIds.length > 0
+        ? documentsRef.current
+            .filter(d => settingsRef.current.focusDocumentIds.includes(d.id))
+            .map(d => d.title || d.filename)
+        : []
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ message: text.trim(), history }),
+        body: JSON.stringify({
+          message: text.trim(),
+          history,
+          settings: { teachingMode: settingsRef.current.teachingMode, voiceTone: settingsRef.current.voiceTone },
+          focusDocumentTitles,
+        }),
       })
       if (res.status === 401) { router.push('/login?reason=session_expired'); return }
       if (!res.ok || !res.body) throw new Error(`API ${res.status}`)
@@ -838,7 +1030,7 @@ export default function TutorRoomPage() {
         if (done) {
           if (voiceOnRef.current) {
             const remaining = accumulated.slice(spokenUpTo).trim()
-            if (remaining) enqueueSpeech(remaining)
+            if (remaining) enqueueSpeech(stripMarkdown(remaining))
           }
           break
         }
@@ -853,7 +1045,7 @@ export default function TutorRoomPage() {
           const boundary = findSpeechBoundary(unspoken)
           if (boundary > 0) {
             const toSpeak = unspoken.slice(0, boundary).trim()
-            if (toSpeak) { enqueueSpeech(toSpeak); spokenUpTo += boundary }
+            if (toSpeak) { enqueueSpeech(stripMarkdown(toSpeak)); spokenUpTo += boundary }
           }
         }
       }
@@ -992,6 +1184,12 @@ export default function TutorRoomPage() {
                 <RotateCcw size={12} />End Session
               </button>
             )}
+            <button onClick={() => setShowSettings(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition-colors"
+              style={{ border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', minHeight: 36 }}>
+              <Settings size={12} />
+              <span className="hidden sm:inline">Settings</span>
+            </button>
             {/* Mobile ⋮ menu */}
             <div className="relative sm:hidden">
               <button onClick={() => setShowMobileMenu(v => !v)}
@@ -1008,6 +1206,10 @@ export default function TutorRoomPage() {
                     <button onClick={() => { endSession(); setShowMobileMenu(false) }}
                       className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors">
                       <RotateCcw size={14} />End Session
+                    </button>
+                    <button onClick={() => { setShowSettings(true); setShowMobileMenu(false) }}
+                      className="flex items-center gap-3 w-full px-4 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-white/5 transition-colors">
+                      <Settings size={14} />Settings
                     </button>
                   </motion.div>
                 )}
@@ -1133,6 +1335,15 @@ export default function TutorRoomPage() {
           </p>
         </div>
       </motion.div>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        open={showSettings}
+        onClose={() => setShowSettings(false)}
+        settings={tutorSettings}
+        onSettings={s => setTutorSettings(s)}
+        documents={documents}
+      />
 
       {/* ── Mobile: floating Maya button ── */}
       <motion.button
