@@ -62,15 +62,15 @@ function findSpeechBoundary(text: string): number {
 }
 
 /* ─── Animated Maya Avatar ──────────────────────────────── */
-function MayaAvatar({ isSpeaking, isThinking }: { isSpeaking: boolean; isThinking: boolean }) {
+function MayaAvatar({ isSpeaking, isThinking, isListening }: { isSpeaking: boolean; isThinking: boolean; isListening: boolean }) {
   return (
     <div className="relative flex items-center justify-center">
       {/* Outer glow */}
       <motion.div
-        animate={{ scale: isSpeaking ? [1, 1.06, 1] : isThinking ? [1, 1.03, 1] : 1, opacity: isSpeaking ? [0.4, 0.7, 0.4] : isThinking ? [0.25, 0.45, 0.25] : 0.25 }}
-        transition={{ duration: isSpeaking ? 1.6 : 2.4, repeat: Infinity, ease: 'easeInOut' }}
+        animate={{ scale: isSpeaking ? [1, 1.06, 1] : isListening ? [1, 1.08, 1] : isThinking ? [1, 1.03, 1] : 1, opacity: isSpeaking ? [0.4, 0.7, 0.4] : isListening ? [0.3, 0.6, 0.3] : isThinking ? [0.25, 0.45, 0.25] : 0.25 }}
+        transition={{ duration: isSpeaking ? 1.6 : isListening ? 1.2 : 2.4, repeat: Infinity, ease: 'easeInOut' }}
         className="absolute w-52 h-52 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.35) 0%, transparent 70%)', transition: 'background 0.4s' }}
+        style={{ background: `radial-gradient(circle, ${isListening ? 'rgba(74,222,128,0.3)' : 'rgba(99,102,241,0.35)'} 0%, transparent 70%)`, transition: 'background 0.4s' }}
       />
       {/* Idle bob */}
       <motion.div
@@ -117,16 +117,16 @@ function MayaAvatar({ isSpeaking, isThinking }: { isSpeaking: boolean; isThinkin
             <motion.path
               d="M80 117 Q90 122 100 117"
               stroke="#e07050" strokeWidth="2" fill="none" strokeLinecap="round"
-              animate={{ d: isSpeaking ? ['M80 116 Q90 125 100 116', 'M80 117 Q90 120 100 117', 'M80 116 Q90 125 100 116'] : isThinking ? ['M80 117 Q90 122 100 117', 'M81 118 Q90 120 99 118', 'M80 117 Q90 122 100 117'] : 'M80 117 Q90 122 100 117' }}
-              transition={{ duration: isSpeaking ? 0.4 : 1.2, repeat: isSpeaking || isThinking ? Infinity : 0 }} />
+              animate={{ d: isSpeaking ? ['M80 116 Q90 125 100 116', 'M80 117 Q90 120 100 117', 'M80 116 Q90 125 100 116'] : isListening ? ['M80 117 Q90 124 100 117', 'M80 118 Q90 122 100 118', 'M80 117 Q90 124 100 117'] : isThinking ? ['M80 117 Q90 122 100 117', 'M81 118 Q90 120 99 118', 'M80 117 Q90 122 100 117'] : 'M80 117 Q90 122 100 117' }}
+              transition={{ duration: isSpeaking ? 0.4 : isListening ? 0.8 : 1.2, repeat: isSpeaking || isThinking || isListening ? Infinity : 0 }} />
           </svg>
         </div>
-        {(isSpeaking || isThinking) && (
+        {(isSpeaking || isThinking || isListening) && (
           <motion.div
             animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0, 0.5] }}
-            transition={{ duration: isSpeaking ? 0.8 : 1.6, repeat: Infinity }}
+            transition={{ duration: isListening ? 1.0 : isSpeaking ? 0.8 : 1.6, repeat: Infinity }}
             className="absolute inset-0 rounded-full pointer-events-none"
-            style={{ border: `2px solid ${isSpeaking ? '#818cf8' : '#a78bfa'}` }}
+            style={{ border: `2px solid ${isListening ? '#4ade80' : isSpeaking ? '#818cf8' : '#a78bfa'}` }}
           />
         )}
       </motion.div>
@@ -135,45 +135,92 @@ function MayaAvatar({ isSpeaking, isThinking }: { isSpeaking: boolean; isThinkin
 }
 
 /* ─── Avatar Panel ───────────────────────────────────────── */
-function AvatarPanel({ micOn, voiceOn, isSpeaking, isThinking, onToggleMic, onToggleVoice, activeFile }: {
-  micOn: boolean; voiceOn: boolean; isSpeaking: boolean; isThinking: boolean
-  onToggleMic: () => void; onToggleVoice: () => void; activeFile: string | null
+function AvatarPanel({ micOn, voiceOn, isSpeaking, isThinking, isListening, liveMode, onToggleMic, onToggleVoice, onStartLive, onStopLive, activeFile }: {
+  micOn: boolean; voiceOn: boolean; isSpeaking: boolean; isThinking: boolean; isListening: boolean; liveMode: boolean
+  onToggleMic: () => void; onToggleVoice: () => void; onStartLive: () => void; onStopLive: () => void; activeFile: string | null
 }) {
+  const liveStatusLabel = isListening ? 'Listening…' : isThinking ? 'Thinking…' : isSpeaking ? 'Speaking…' : 'Ready'
+  const liveStatusColor = isListening ? '#4ade80' : isThinking ? '#fbbf24' : isSpeaking ? '#818cf8' : '#94a3b8'
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6 px-6 py-8">
-      <MayaAvatar isSpeaking={isSpeaking} isThinking={isThinking} />
+    <div className="flex flex-col items-center justify-center h-full gap-5 px-6 py-8">
+      <MayaAvatar isSpeaking={isSpeaking} isThinking={isThinking} isListening={isListening} />
       <div className="text-center">
         <h2 className="text-lg font-bold text-white tracking-wide">Maya</h2>
-        <p className="text-sm text-violet-300 mt-0.5">
-          {isThinking ? 'Thinking…' : isSpeaking ? 'Speaking…' : 'Your AI Tutor'}
-        </p>
+        <motion.p
+          key={liveMode ? liveStatusLabel : 'static'}
+          initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
+          className="text-sm mt-0.5 font-medium"
+          style={{ color: liveMode ? liveStatusColor : '#c4b5fd', transition: 'color 0.3s' }}>
+          {liveMode ? liveStatusLabel : (isThinking ? 'Thinking…' : isSpeaking ? 'Speaking…' : 'Your AI Tutor')}
+        </motion.p>
       </div>
-      <div className="flex gap-3">
-        <button onClick={onToggleMic}
-          className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
-          style={{
-            background: micOn ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.06)',
-            border: micOn ? '1px solid rgba(16,185,129,0.5)' : '1px solid rgba(255,255,255,0.12)',
-            color: micOn ? '#6ee7b7' : '#94a3b8',
-            boxShadow: micOn ? '0 0 12px rgba(16,185,129,0.2)' : 'none',
-            minHeight: 44,
-          }}>
-          {micOn ? <Mic size={14} /> : <MicOff size={14} />}
-          <span>Mic {micOn ? 'ON' : 'OFF'}</span>
-        </button>
-        <button onClick={onToggleVoice}
-          className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200"
-          style={{
-            background: voiceOn ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.06)',
-            border: voiceOn ? '1px solid rgba(14,165,233,0.5)' : '1px solid rgba(255,255,255,0.12)',
-            color: voiceOn ? '#7dd3fc' : '#94a3b8',
-            boxShadow: voiceOn ? '0 0 12px rgba(14,165,233,0.2)' : 'none',
-            minHeight: 44,
-          }}>
-          {voiceOn ? <Volume2 size={14} /> : <VolumeX size={14} />}
-          <span>Voice {voiceOn ? 'ON' : 'OFF'}</span>
-        </button>
-      </div>
+
+      <AnimatePresence mode="wait">
+        {liveMode ? (
+          <motion.div key="live"
+            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col items-center gap-4 w-full">
+            {/* Waveform bars when listening; status hint otherwise */}
+            <div className="h-9 flex items-center justify-center">
+              {isListening ? (
+                <div className="flex items-end gap-1">
+                  {[10, 22, 30, 18, 26, 14, 20].map((h, i) => (
+                    <motion.div key={i}
+                      className="w-1.5 rounded-full"
+                      style={{ background: '#4ade80', height: h }}
+                      animate={{ height: [h * 0.4 + 4, h, h * 0.4 + 4] }}
+                      transition={{ duration: 0.45 + i * 0.06, repeat: Infinity, ease: 'easeInOut' }}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-500 italic">
+                  {isThinking ? 'Processing your question…' : isSpeaking ? 'Tap mic below to interrupt' : 'Say something…'}
+                </p>
+              )}
+            </div>
+            <button onClick={onStopLive}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+              style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#fca5a5', minHeight: 44 }}>
+              <div className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
+              End Live
+            </button>
+          </motion.div>
+        ) : (
+          <motion.div key="normal"
+            initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="flex flex-col items-center gap-3 w-full">
+            {/* Start Live button */}
+            <motion.button
+              onClick={onStartLive}
+              className="flex items-center gap-2.5 px-6 py-3 rounded-full text-sm font-semibold w-full justify-center transition-all hover:scale-105 active:scale-95"
+              style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.2))', border: '1px solid rgba(139,92,246,0.5)', color: '#c4b5fd', minHeight: 48 }}
+              animate={{ boxShadow: ['0 0 16px rgba(99,102,241,0.12)','0 0 28px rgba(139,92,246,0.28)','0 0 16px rgba(99,102,241,0.12)'] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}>
+              <Mic size={15} />
+              Start Live Conversation
+            </motion.button>
+            {/* Manual mic + voice toggles */}
+            <div className="flex gap-2">
+              <button onClick={onToggleMic}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all duration-200"
+                style={{ background: micOn ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.06)', border: micOn ? '1px solid rgba(16,185,129,0.5)' : '1px solid rgba(255,255,255,0.12)', color: micOn ? '#6ee7b7' : '#94a3b8', minHeight: 36 }}>
+                {micOn ? <Mic size={13} /> : <MicOff size={13} />}
+                <span>Mic {micOn ? 'ON' : 'OFF'}</span>
+              </button>
+              <button onClick={onToggleVoice}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-medium transition-all duration-200"
+                style={{ background: voiceOn ? 'rgba(14,165,233,0.15)' : 'rgba(255,255,255,0.06)', border: voiceOn ? '1px solid rgba(14,165,233,0.5)' : '1px solid rgba(255,255,255,0.12)', color: voiceOn ? '#7dd3fc' : '#94a3b8', minHeight: 36 }}>
+                {voiceOn ? <Volume2 size={13} /> : <VolumeX size={13} />}
+                <span>Voice {voiceOn ? 'ON' : 'OFF'}</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center gap-2 px-4 py-2 rounded-full text-xs text-slate-300 max-w-[220px]"
           style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
         <FileText size={12} className="text-indigo-400 shrink-0" />
@@ -244,6 +291,7 @@ export default function TutorRoomPage() {
   const [isSpeaking, setIsSpeaking]               = useState(false)
   const [isListening, setIsListening]             = useState(false)
   const [isThinking, setIsThinking]               = useState(false)
+  const [liveMode, setLiveMode]                   = useState(false)
 
   const bottomRef      = useRef<HTMLDivElement>(null)
   const scrollRef      = useRef<HTMLDivElement>(null)
@@ -255,20 +303,34 @@ export default function TutorRoomPage() {
   const voiceOnRef          = useRef(voiceOn)
   const speakQueueRef       = useRef<string[]>([])
   const isProcessingQueue   = useRef(false)
+  const liveModeRef         = useRef(false)
+  const isStreamingRef      = useRef(false)
+  const isSpeakingRef       = useRef(false)
+  const currentSourceRef    = useRef<AudioBufferSourceNode | null>(null)
+  const startLiveListenRef  = useRef<() => void>(() => {})
 
   const userInitial = (user?.user_metadata?.full_name || user?.email || 'U').charAt(0).toUpperCase()
 
   /* Keep refs in sync */
   useEffect(() => { voiceOnRef.current = voiceOn }, [voiceOn])
+  useEffect(() => { liveModeRef.current = liveMode }, [liveMode])
+  useEffect(() => { isStreamingRef.current = isStreaming }, [isStreaming])
+  useEffect(() => { isSpeakingRef.current = isSpeaking }, [isSpeaking])
 
   /* Cancel TTS when voice is turned off */
   useEffect(() => {
     if (!voiceOn) {
+      setLiveMode(false)
+      liveModeRef.current = false
+      recognitionRef.current?.stop()
+      recognitionRef.current = null
+      setIsListening(false)
       speakQueueRef.current = []
       isProcessingQueue.current = false
       window.speechSynthesis?.cancel()
       audioRef.current?.pause()
       audioRef.current = null
+      try { currentSourceRef.current?.stop(); currentSourceRef.current = null } catch {}
       try { audioCtxRef.current?.suspend() } catch {}
       setIsSpeaking(false)
       setIsThinking(false)
@@ -293,6 +355,7 @@ export default function TutorRoomPage() {
       audioRef.current?.pause()
       audioCtxRef.current?.close()
       recognitionRef.current?.stop()
+      try { currentSourceRef.current?.stop() } catch {}
     }
   }, [])
 
@@ -362,9 +425,10 @@ export default function TutorRoomPage() {
       const ctx = audioCtxRef.current
       if (!ctx) { resolve(); return }
       const source = ctx.createBufferSource()
+      currentSourceRef.current = source
       source.buffer = decoded
       source.connect(ctx.destination)
-      source.onended = () => resolve()
+      source.onended = () => { currentSourceRef.current = null; resolve() }
       source.start(0)
     })
   }, [])
@@ -420,7 +484,13 @@ export default function TutorRoomPage() {
     }
 
     isProcessingQueue.current = false
-    if (speakQueueRef.current.length === 0) setIsSpeaking(false)
+    if (speakQueueRef.current.length === 0) {
+      setIsSpeaking(false)
+      // In live mode, auto-restart listening after Maya finishes
+      if (liveModeRef.current && !isStreamingRef.current) {
+        setTimeout(() => startLiveListenRef.current(), 350)
+      }
+    }
   }, [fetchTTSAudio, playAudioBuffer])
 
   const enqueueSpeech = useCallback((text: string) => {
@@ -437,7 +507,96 @@ export default function TutorRoomPage() {
     enqueueSpeech(text)
   }, [enqueueSpeech])
 
-  /* ── STT ─────────────────────────────────────────────── */
+  /* Stop all audio immediately — used for barge-in */
+  const stopAllAudio = useCallback(() => {
+    speakQueueRef.current = []
+    isProcessingQueue.current = false
+    window.speechSynthesis?.cancel()
+    try { currentSourceRef.current?.stop(); currentSourceRef.current = null } catch {}
+    setIsSpeaking(false)
+  }, [])
+
+  /* ── Live Conversation Loop ──────────────────── */
+  const startLiveListen = useCallback(() => {
+    if (!liveModeRef.current) return
+    if (recognitionRef.current) return
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SR) return
+
+    transcriptRef.current = ''
+    setInput('')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rec = new SR() as any
+    rec.continuous = false
+    rec.interimResults = true
+    rec.lang = 'en-US'
+
+    rec.onresult = (event: any) => {
+      // Barge-in: cut Maya off if she's still speaking
+      if (isSpeakingRef.current) {
+        speakQueueRef.current = []
+        isProcessingQueue.current = false
+        window.speechSynthesis?.cancel()
+        try { currentSourceRef.current?.stop(); currentSourceRef.current = null } catch {}
+        setIsSpeaking(false)
+      }
+      const transcript = Array.from(event.results as any[])
+        .map((r: any) => r[0].transcript)
+        .join('')
+      setInput(transcript)
+      transcriptRef.current = transcript
+    }
+
+    rec.onend = () => {
+      recognitionRef.current = null
+      setIsListening(false)
+      const text = transcriptRef.current.trim()
+      transcriptRef.current = ''
+      if (text && liveModeRef.current) {
+        sendMessageRef.current(text)
+      } else if (liveModeRef.current && !isStreamingRef.current && !isSpeakingRef.current) {
+        // Nothing said — restart listening after short pause
+        setTimeout(() => startLiveListenRef.current(), 300)
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onerror = (event: any) => {
+      recognitionRef.current = null
+      setIsListening(false)
+      if (liveModeRef.current && event.error !== 'not-allowed') {
+        setTimeout(() => startLiveListenRef.current(), 500)
+      }
+    }
+
+    recognitionRef.current = rec
+    setIsListening(true)
+    rec.start()
+  }, [])
+
+  const startLiveMode = useCallback(() => {
+    unlockAudio()
+    setVoiceOn(true)
+    voiceOnRef.current = true
+    setLiveMode(true)
+    liveModeRef.current = true
+    setInput('')
+    setTimeout(() => startLiveListenRef.current(), 200)
+  }, [unlockAudio])
+
+  const stopLiveMode = useCallback(() => {
+    setLiveMode(false)
+    liveModeRef.current = false
+    recognitionRef.current?.stop()
+    recognitionRef.current = null
+    setIsListening(false)
+    speakQueueRef.current = []
+    isProcessingQueue.current = false
+    window.speechSynthesis?.cancel()
+    try { currentSourceRef.current?.stop(); currentSourceRef.current = null } catch {}
+    setIsSpeaking(false)
+  }, [])
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop()
     recognitionRef.current = null
@@ -495,6 +654,12 @@ export default function TutorRoomPage() {
     const userMsg: Message = { id: crypto.randomUUID(), role: 'user', content: text.trim(), timestamp: formatTime(new Date()) }
     setMessages(prev => [...prev, userMsg])
     setInput('')
+    // Stop any active recognition so it doesn't re-trigger
+    if (recognitionRef.current) {
+      try { (recognitionRef.current as any).abort?.() || recognitionRef.current.stop() } catch {}
+      recognitionRef.current = null
+      setIsListening(false)
+    }
     setIsStreaming(true)
     setIsThinking(true)
 
@@ -558,6 +723,8 @@ export default function TutorRoomPage() {
 
   /* Keep sendMessageRef up to date so STT onend can call it */
   useEffect(() => { sendMessageRef.current = sendMessage }, [sendMessage])
+  /* Keep startLiveListenRef up to date */
+  useEffect(() => { startLiveListenRef.current = startLiveListen }, [startLiveListen])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) }
@@ -583,7 +750,7 @@ export default function TutorRoomPage() {
     setVoiceOn(v => !v)
   }
 
-  const avatarProps = { micOn, voiceOn, isSpeaking, isThinking, onToggleMic: toggleMic, onToggleVoice: toggleVoice, activeFile }
+  const avatarProps = { micOn, voiceOn, isSpeaking, isThinking, isListening, liveMode, onToggleMic: toggleMic, onToggleVoice: toggleVoice, onStartLive: startLiveMode, onStopLive: stopLiveMode, activeFile }
 
   return (
     <div
@@ -758,15 +925,15 @@ export default function TutorRoomPage() {
           <div className="flex items-end gap-2 rounded-2xl px-3 py-2"
             style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(99,102,241,0.2)' }}>
             <button
-              onClick={startListening}
-              title={!micOn ? 'Enable mic in the controls above' : isListening ? 'Stop recording' : 'Start recording'}
+              onClick={liveMode ? () => { stopAllAudio(); setTimeout(() => startLiveListenRef.current(), 100) } : startListening}
+              title={liveMode ? (isListening ? 'Listening…' : 'Tap to speak') : !micOn ? 'Start Live or enable Mic' : isListening ? 'Stop recording' : 'Start recording'}
               className="shrink-0 rounded-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 relative"
               style={{
-                background: isListening ? 'rgba(239,68,68,0.2)' : micOn ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.05)',
-                color: isListening ? '#fca5a5' : micOn ? '#6ee7b7' : '#475569',
-                border: isListening ? '1px solid rgba(239,68,68,0.4)' : 'none',
+                background: isListening ? 'rgba(239,68,68,0.2)' : liveMode ? 'rgba(99,102,241,0.18)' : micOn ? 'rgba(16,185,129,0.12)' : 'rgba(255,255,255,0.05)',
+                color: isListening ? '#fca5a5' : liveMode ? '#a5b4fc' : micOn ? '#6ee7b7' : '#475569',
+                border: isListening ? '1px solid rgba(239,68,68,0.4)' : liveMode ? '1px solid rgba(99,102,241,0.45)' : 'none',
                 minWidth: 44, minHeight: 44, width: 44, height: 44,
-                boxShadow: isListening ? '0 0 12px rgba(239,68,68,0.3)' : 'none',
+                boxShadow: isListening ? '0 0 12px rgba(239,68,68,0.3)' : liveMode ? '0 0 12px rgba(99,102,241,0.3)' : 'none',
               }}>
               {isListening ? (
                 <>
