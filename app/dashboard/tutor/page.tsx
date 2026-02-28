@@ -228,7 +228,9 @@ export default function TutorRoomPage() {
   const recognitionRef = useRef<any>(null)
   const transcriptRef  = useRef('')
   const sendMessageRef = useRef<(text: string) => void>(() => {})
-  const voiceOnRef     = useRef(voiceOn)
+  const voiceOnRef          = useRef(voiceOn)
+  const speakQueueRef       = useRef<string[]>([])
+  const isProcessingQueue   = useRef(false)
 
   const userInitial = (user?.user_metadata?.full_name || user?.email || 'U').charAt(0).toUpperCase()
 
@@ -238,7 +240,12 @@ export default function TutorRoomPage() {
   /* Cancel TTS when voice is turned off */
   useEffect(() => {
     if (!voiceOn) {
+      speakQueueRef.current = []
+      isProcessingQueue.current = false
       window.speechSynthesis?.cancel()
+      audioRef.current?.pause()
+      audioRef.current = null
+      try { audioCtxRef.current?.suspend() } catch {}
       setIsSpeaking(false)
     }
   }, [voiceOn])
@@ -255,7 +262,11 @@ export default function TutorRoomPage() {
   /* Cleanup TTS + STT on unmount */
   useEffect(() => {
     return () => {
+      speakQueueRef.current = []
+      isProcessingQueue.current = false
       window.speechSynthesis?.cancel()
+      audioRef.current?.pause()
+      audioCtxRef.current?.close()
       recognitionRef.current?.stop()
     }
   }, [])
@@ -288,18 +299,28 @@ export default function TutorRoomPage() {
   }
 
   /* ── TTS ─────────────────────────────────────────────── */
-  const speakText = useCallback((text: string) => {
-    if (!text.trim()) return
+  const audioRef    = useRef<HTMLAudioElement | null>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+
+  // Unlock AudioContext on first user interaction (needed for autoplay policy)
+  const unlockAudio = useCallback(() => {
+    if (!audioCtxRef.current) {
+      audioCtxRef.current = new AudioContext()
+    } else if (audioCtxRef.current.state === 'suspended') {
+      audioCtxRef.current.resume()
+    }
+  }, [])
+
+  const speakWebSpeech = useCallback((text: string) => {
     window.speechSynthesis.cancel()
     const utterance = new SpeechSynthesisUtterance(text)
     utterance.lang = 'en-US'
     utterance.rate = 1.0
-    utterance.pitch = 1.1
+    utterance.pitch = 1.05
     utterance.volume = 1.0
-    // Prefer a female voice if available
     const voices = window.speechSynthesis.getVoices()
     const preferred = voices.find(v =>
-      /female|woman|girl|zira|samantha|karen|moira|tessa/i.test(v.name)
+      /female|woman|zira|samantha|karen|moira|tessa/i.test(v.name)
     ) || voices.find(v => v.lang.startsWith('en'))
     if (preferred) utterance.voice = preferred
     utterance.onstart = () => setIsSpeaking(true)
@@ -307,6 +328,77 @@ export default function TutorRoomPage() {
     utterance.onerror = () => setIsSpeaking(false)
     window.speechSynthesis.speak(utterance)
   }, [])
+
+  /* Speak one chunk — resolves when audio finishes */
+  const speakChunk = useCallback(async (text: string): Promise<void> => {
+    if (!text.trim()) return
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ text }),
+      })
+      if (!res.ok) {
+        await new Promise<void>(resolve => {
+          const utt = new SpeechSynthesisUtterance(text)
+          utt.onend = () => resolve(); utt.onerror = () => resolve()
+          window.speechSynthesis.speak(utt)
+        })
+        return
+      }
+      const arrayBuf = await res.arrayBuffer()
+      const ctx = audioCtxRef.current
+      if (!ctx) {
+        await new Promise<void>(resolve => {
+          const utt = new SpeechSynthesisUtterance(text)
+          utt.onend = () => resolve(); utt.onerror = () => resolve()
+          window.speechSynthesis.speak(utt)
+        })
+        return
+      }
+      if (ctx.state === 'suspended') await ctx.resume()
+      const decoded = await ctx.decodeAudioData(arrayBuf)
+      await new Promise<void>(resolve => {
+        const source = ctx.createBufferSource()
+        source.buffer = decoded
+        source.connect(ctx.destination)
+        source.onended = () => resolve()
+        source.start(0)
+      })
+    } catch (err) {
+      console.warn('[TTS] Chunk error:', err)
+    }
+  }, [])
+
+  /* Drain the speak queue sequentially */
+  const processSpeakQueue = useCallback(async () => {
+    if (isProcessingQueue.current) return
+    isProcessingQueue.current = true
+    setIsSpeaking(true)
+    while (speakQueueRef.current.length > 0) {
+      if (!voiceOnRef.current) break
+      const chunk = speakQueueRef.current.shift()!
+      await speakChunk(chunk)
+    }
+    isProcessingQueue.current = false
+    if (speakQueueRef.current.length === 0) setIsSpeaking(false)
+  }, [speakChunk])
+
+  /* Add a sentence to the TTS queue and start processing */
+  const enqueueSpeech = useCallback((text: string) => {
+    if (!text.trim()) return
+    speakQueueRef.current.push(text)
+    processSpeakQueue()
+  }, [processSpeakQueue])
+
+  /* One-shot speak: clear queue then enqueue (used for non-streaming callers) */
+  const speakText = useCallback((text: string) => {
+    speakQueueRef.current = []
+    isProcessingQueue.current = false
+    window.speechSynthesis?.cancel()
+    enqueueSpeech(text)
+  }, [enqueueSpeech])
 
   /* ── STT ─────────────────────────────────────────────── */
   const stopListening = useCallback(() => {
@@ -389,15 +481,38 @@ export default function TutorRoomPage() {
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let accumulated = ''
+      let spokenUpTo = 0
       while (true) {
         const { done, value } = await reader.read()
-        if (done) break
+        if (done) {
+          // Enqueue any remaining unspoken text
+          if (voiceOnRef.current) {
+            const remaining = accumulated.slice(spokenUpTo).trim()
+            if (remaining) enqueueSpeech(remaining)
+          }
+          break
+        }
         accumulated += decoder.decode(value, { stream: true })
         setMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, content: accumulated } : m))
-      }
-      // Speak the final response if voice is on
-      if (voiceOnRef.current && accumulated.trim()) {
-        speakText(accumulated)
+        // Enqueue complete sentences as they stream in
+        if (voiceOnRef.current) {
+          const unspoken = accumulated.slice(spokenUpTo)
+          // Find last sentence boundary: .!? followed by whitespace or end
+          let lastBoundary = -1
+          for (let i = unspoken.length - 1; i >= 0; i--) {
+            if ('.!?'.includes(unspoken[i]) && (i === unspoken.length - 1 || /\s/.test(unspoken[i + 1]))) {
+              lastBoundary = i + 1
+              break
+            }
+          }
+          if (lastBoundary > 0) {
+            const toSpeak = unspoken.slice(0, lastBoundary).trim()
+            if (toSpeak) {
+              enqueueSpeech(toSpeak)
+              spokenUpTo += lastBoundary
+            }
+          }
+        }
       }
     } catch {
       setMessages(prev => prev.map(m =>
@@ -406,7 +521,7 @@ export default function TutorRoomPage() {
     } finally {
       setIsStreaming(false)
     }
-  }, [isStreaming, messages, router, speakText])
+  }, [isStreaming, messages, router, enqueueSpeech])
 
   /* Keep sendMessageRef up to date so STT onend can call it */
   useEffect(() => { sendMessageRef.current = sendMessage }, [sendMessage])
@@ -424,7 +539,14 @@ export default function TutorRoomPage() {
     else setMicOn(true)
   }
   const toggleVoice = () => {
-    if (voiceOn) { window.speechSynthesis?.cancel(); setIsSpeaking(false) }
+    if (!voiceOn) {
+      unlockAudio() // unlock AudioContext on the button click (user gesture)
+    } else {
+      window.speechSynthesis?.cancel()
+      audioRef.current?.pause()
+      audioRef.current = null
+      setIsSpeaking(false)
+    }
     setVoiceOn(v => !v)
   }
 
