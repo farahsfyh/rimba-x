@@ -897,8 +897,11 @@ export default function TutorRoomPage() {
 
         {/* Tablet avatar bar */}
         <div className="hidden md:flex lg:hidden flex-col">
-          <button onClick={() => setTabletExpanded(v => !v)}
-            className="flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors"
+          <div
+            role="button" tabIndex={0}
+            onClick={() => setTabletExpanded(v => !v)}
+            onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') setTabletExpanded(v => !v) }}
+            className="flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors cursor-pointer"
             style={{ borderBottom: '1px solid rgba(99,102,241,0.15)' }}>
             <div className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-white"
               style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 0 10px rgba(99,102,241,0.4)' }}>M</div>
@@ -922,7 +925,7 @@ export default function TutorRoomPage() {
             </div>
             <ChevronDown size={16} className="text-slate-400 transition-transform duration-200"
               style={{ transform: tabletExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }} />
-          </button>
+          </div>
           <AnimatePresence>
             {tabletExpanded && (
               <motion.div
