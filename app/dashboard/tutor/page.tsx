@@ -307,7 +307,13 @@ export default function TutorRoomPage() {
   const isStreamingRef      = useRef(false)
   const isSpeakingRef       = useRef(false)
   const currentSourceRef    = useRef<AudioBufferSourceNode | null>(null)
+  const activeSourcesRef    = useRef<AudioBufferSourceNode[]>([])
+  const scheduleEndTimeRef  = useRef<number>(0)
+  const lastAudioStopTimeRef = useRef<number>(0)   // ms timestamp — for echo-decay cooldown
   const startLiveListenRef  = useRef<() => void>(() => {})
+  const bargeInAnalyserRef  = useRef<AnalyserNode | null>(null)
+  const bargeInStreamRef    = useRef<MediaStream | null>(null)
+  const bargeInFrameRef     = useRef<number>(0)
 
   const userInitial = (user?.user_metadata?.full_name || user?.email || 'U').charAt(0).toUpperCase()
 
@@ -322,6 +328,7 @@ export default function TutorRoomPage() {
     if (!voiceOn) {
       setLiveMode(false)
       liveModeRef.current = false
+      stopBargeInMonitor()   // kill AEC watcher
       recognitionRef.current?.stop()
       recognitionRef.current = null
       setIsListening(false)
@@ -330,7 +337,11 @@ export default function TutorRoomPage() {
       window.speechSynthesis?.cancel()
       audioRef.current?.pause()
       audioRef.current = null
-      try { currentSourceRef.current?.stop(); currentSourceRef.current = null } catch {}
+      activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch {} })
+      activeSourcesRef.current = []
+      currentSourceRef.current = null
+      if (audioCtxRef.current) scheduleEndTimeRef.current = audioCtxRef.current.currentTime
+      lastAudioStopTimeRef.current = Date.now()
       try { audioCtxRef.current?.suspend() } catch {}
       setIsSpeaking(false)
       setIsThinking(false)
@@ -355,6 +366,8 @@ export default function TutorRoomPage() {
       audioRef.current?.pause()
       audioCtxRef.current?.close()
       recognitionRef.current?.stop()
+      cancelAnimationFrame(bargeInFrameRef.current)
+      bargeInStreamRef.current?.getTracks().forEach(t => t.stop())
       try { currentSourceRef.current?.stop() } catch {}
     }
   }, [])
@@ -419,17 +432,30 @@ export default function TutorRoomPage() {
     }
   }, [])
 
-  /* Play a decoded AudioBuffer — resolves when done */
+  /* Play a decoded AudioBuffer — resolves when done, gapless via scheduled start time */
   const playAudioBuffer = useCallback((decoded: AudioBuffer): Promise<void> => {
     return new Promise<void>(resolve => {
       const ctx = audioCtxRef.current
       if (!ctx) { resolve(); return }
       const source = ctx.createBufferSource()
-      currentSourceRef.current = source
       source.buffer = decoded
+      source.playbackRate.value = 1.12  // slight speedup — keeps natural cadence without dead air
       source.connect(ctx.destination)
-      source.onended = () => { currentSourceRef.current = null; resolve() }
-      source.start(0)
+
+      // Schedule gaplessly: if a previous buffer is still playing, start right after it
+      const now = ctx.currentTime
+      const startAt = Math.max(now, scheduleEndTimeRef.current)
+      const scaledDuration = decoded.duration / 1.12
+      scheduleEndTimeRef.current = startAt + scaledDuration
+
+      currentSourceRef.current = source
+      activeSourcesRef.current.push(source)
+      source.onended = () => {
+        activeSourcesRef.current = activeSourcesRef.current.filter(s => s !== source)
+        if (currentSourceRef.current === source) currentSourceRef.current = null
+        resolve()
+      }
+      source.start(startAt)
     })
   }, [])
 
@@ -485,10 +511,12 @@ export default function TutorRoomPage() {
 
     isProcessingQueue.current = false
     if (speakQueueRef.current.length === 0) {
+      lastAudioStopTimeRef.current = Date.now()   // record when Maya finishes speaking
       setIsSpeaking(false)
-      // In live mode, auto-restart listening after Maya finishes
+      // In live mode, auto-restart listening.
+      // startLiveListen enforces the 550ms echo-decay cooldown internally via retry.
       if (liveModeRef.current && !isStreamingRef.current) {
-        setTimeout(() => startLiveListenRef.current(), 350)
+        setTimeout(() => startLiveListenRef.current(), 600)
       }
     }
   }, [fetchTTSAudio, playAudioBuffer])
@@ -507,12 +535,90 @@ export default function TutorRoomPage() {
     enqueueSpeech(text)
   }, [enqueueSpeech])
 
+  /* ── Barge-In Volume Monitor ─────────────────────────────────────────────────
+   * Runs a getUserMedia stream with OS-level echo cancellation so the analyser
+   * sees only the user's real voice — not the speaker output.
+   * When the user speaks above the threshold while Maya is playing, we stop all
+   * Maya audio FIRST and then start SpeechRecognition (which now hears silence
+   * from the speaker, not Maya's voice). This prevents the microphone from
+   * picking up Maya and triggering false barge-ins. ─────────────────────────── */
+  const stopBargeInMonitor = useCallback(() => {
+    cancelAnimationFrame(bargeInFrameRef.current)
+    bargeInStreamRef.current?.getTracks().forEach(t => t.stop())
+    bargeInStreamRef.current = null
+    bargeInAnalyserRef.current = null
+  }, [])
+
+  const startBargeInMonitor = useCallback(() => {
+    if (bargeInStreamRef.current) return  // already running
+    navigator.mediaDevices?.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+    }).then(stream => {
+      bargeInStreamRef.current = stream
+      const ctx = audioCtxRef.current
+      if (!ctx) { stream.getTracks().forEach(t => t.stop()); bargeInStreamRef.current = null; return }
+      const source = ctx.createMediaStreamSource(stream)
+      const analyser = ctx.createAnalyser()
+      analyser.fftSize = 512
+      analyser.smoothingTimeConstant = 0.4
+      source.connect(analyser)
+      bargeInAnalyserRef.current = analyser
+
+      const data = new Float32Array(analyser.fftSize)
+      const check = () => {
+        // Exit loop if live mode ended
+        if (!liveModeRef.current) {
+          cancelAnimationFrame(bargeInFrameRef.current)
+          bargeInStreamRef.current?.getTracks().forEach(t => t.stop())
+          bargeInStreamRef.current = null
+          bargeInAnalyserRef.current = null
+          return
+        }
+
+        analyser.getFloatTimeDomainData(data)
+        let sum = 0
+        for (let i = 0; i < data.length; i++) sum += data[i] * data[i]
+        const rms = Math.sqrt(sum / data.length)
+
+        // Trigger barge-in only when Maya is speaking AND:
+        //   1. User RMS well above echo floor (0.06 — speaker echo is typically <0.03)
+        //   2. We aren't already in the echo-decay cooldown window
+        const echoFree = Date.now() - lastAudioStopTimeRef.current > 700
+        if (isSpeakingRef.current && rms > 0.06 && echoFree && !recognitionRef.current) {
+          // Stop all Maya audio immediately, record stop time for cooldown
+          speakQueueRef.current = []
+          isProcessingQueue.current = false
+          window.speechSynthesis?.cancel()
+          activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch {} })
+          activeSourcesRef.current = []
+          currentSourceRef.current = null
+          if (audioCtxRef.current) scheduleEndTimeRef.current = audioCtxRef.current.currentTime
+          lastAudioStopTimeRef.current = Date.now()
+          setIsSpeaking(false)
+          // startLiveListen enforces its own 550ms cooldown — no need for extra delay here
+          setTimeout(() => startLiveListenRef.current(), 50)
+        }
+
+        bargeInFrameRef.current = requestAnimationFrame(check)
+      }
+      check()
+    }).catch(() => {
+      // Mic permission denied — live mode still works, barge-in detection just unavailable
+    })
+  }, [stopBargeInMonitor])
+
   /* Stop all audio immediately — used for barge-in */
   const stopAllAudio = useCallback(() => {
     speakQueueRef.current = []
     isProcessingQueue.current = false
     window.speechSynthesis?.cancel()
-    try { currentSourceRef.current?.stop(); currentSourceRef.current = null } catch {}
+    // Stop every scheduled/playing source, not just the last one
+    activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch {} })
+    activeSourcesRef.current = []
+    currentSourceRef.current = null
+    // Reset schedule pointer so next playback starts from now
+    if (audioCtxRef.current) scheduleEndTimeRef.current = audioCtxRef.current.currentTime
+    lastAudioStopTimeRef.current = Date.now()   // start echo-decay cooldown
     setIsSpeaking(false)
   }, [])
 
@@ -520,6 +626,16 @@ export default function TutorRoomPage() {
   const startLiveListen = useCallback(() => {
     if (!liveModeRef.current) return
     if (recognitionRef.current) return
+
+    // Never start recognition while audio is scheduled/playing — speaker echo would be captured
+    const audioActive = activeSourcesRef.current.length > 0 || isSpeakingRef.current
+    // Enforce echo-decay cooldown: wait 550 ms after all speaker audio stops
+    const inCooldown = Date.now() - lastAudioStopTimeRef.current < 550
+    if (audioActive || inCooldown) {
+      // Retry automatically once the cooldown expires
+      setTimeout(() => startLiveListenRef.current(), 200)
+      return
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SR) return
@@ -533,12 +649,15 @@ export default function TutorRoomPage() {
     rec.lang = 'en-US'
 
     rec.onresult = (event: any) => {
-      // Barge-in: cut Maya off if she's still speaking
-      if (isSpeakingRef.current) {
+      // Barge-in: cut Maya off immediately — drain queue, stop ALL scheduled sources
+      if (isSpeakingRef.current || activeSourcesRef.current.length > 0) {
         speakQueueRef.current = []
         isProcessingQueue.current = false
         window.speechSynthesis?.cancel()
-        try { currentSourceRef.current?.stop(); currentSourceRef.current = null } catch {}
+        activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch {} })
+        activeSourcesRef.current = []
+        currentSourceRef.current = null
+        if (audioCtxRef.current) scheduleEndTimeRef.current = audioCtxRef.current.currentTime
         setIsSpeaking(false)
       }
       const transcript = Array.from(event.results as any[])
@@ -556,7 +675,7 @@ export default function TutorRoomPage() {
       if (text && liveModeRef.current) {
         sendMessageRef.current(text)
       } else if (liveModeRef.current && !isStreamingRef.current && !isSpeakingRef.current) {
-        // Nothing said — restart listening after short pause
+        // Nothing said and Maya is idle — restart listening after short pause
         setTimeout(() => startLiveListenRef.current(), 300)
       }
     }
@@ -582,21 +701,27 @@ export default function TutorRoomPage() {
     setLiveMode(true)
     liveModeRef.current = true
     setInput('')
+    startBargeInMonitor()   // start AEC-filtered volume watcher for barge-in
     setTimeout(() => startLiveListenRef.current(), 200)
-  }, [unlockAudio])
+  }, [unlockAudio, startBargeInMonitor])
 
   const stopLiveMode = useCallback(() => {
     setLiveMode(false)
     liveModeRef.current = false
+    stopBargeInMonitor()   // kill AEC volume watcher
     recognitionRef.current?.stop()
     recognitionRef.current = null
     setIsListening(false)
     speakQueueRef.current = []
     isProcessingQueue.current = false
     window.speechSynthesis?.cancel()
-    try { currentSourceRef.current?.stop(); currentSourceRef.current = null } catch {}
+    activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch {} })
+    activeSourcesRef.current = []
+    currentSourceRef.current = null
+    if (audioCtxRef.current) scheduleEndTimeRef.current = audioCtxRef.current.currentTime
+    lastAudioStopTimeRef.current = Date.now()
     setIsSpeaking(false)
-  }, [])
+  }, [stopBargeInMonitor])
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop()
     recognitionRef.current = null
