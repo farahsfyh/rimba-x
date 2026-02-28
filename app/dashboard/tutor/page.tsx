@@ -41,16 +41,36 @@ function formatTime(d: Date) {
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 
+/* Find first speech-ready boundary in a text chunk.
+ * Prefers sentence ends (.!?) at ≥15 chars; falls back to clause breaks (,;:) at ≥35 chars. */
+function findSpeechBoundary(text: string): number {
+  for (let i = 15; i < text.length; i++) {
+    if ('.!?'.includes(text[i])) {
+      const next = text[i + 1]
+      if (!next || /\s/.test(next)) return i + 1
+    }
+  }
+  if (text.length > 35) {
+    for (let i = 30; i < text.length; i++) {
+      if (',;:'.includes(text[i])) {
+        const next = text[i + 1]
+        if (next && /\s/.test(next)) return i + 1
+      }
+    }
+  }
+  return -1
+}
+
 /* ─── Animated Maya Avatar ──────────────────────────────── */
-function MayaAvatar({ isSpeaking }: { isSpeaking: boolean }) {
+function MayaAvatar({ isSpeaking, isThinking }: { isSpeaking: boolean; isThinking: boolean }) {
   return (
     <div className="relative flex items-center justify-center">
       {/* Outer glow */}
       <motion.div
-        animate={{ scale: isSpeaking ? [1, 1.06, 1] : 1, opacity: isSpeaking ? [0.4, 0.7, 0.4] : 0.25 }}
-        transition={{ duration: 1.6, repeat: Infinity, ease: 'easeInOut' }}
+        animate={{ scale: isSpeaking ? [1, 1.06, 1] : isThinking ? [1, 1.03, 1] : 1, opacity: isSpeaking ? [0.4, 0.7, 0.4] : isThinking ? [0.25, 0.45, 0.25] : 0.25 }}
+        transition={{ duration: isSpeaking ? 1.6 : 2.4, repeat: Infinity, ease: 'easeInOut' }}
         className="absolute w-52 h-52 rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.35) 0%, transparent 70%)' }}
+        style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.35) 0%, transparent 70%)', transition: 'background 0.4s' }}
       />
       {/* Idle bob */}
       <motion.div
@@ -97,15 +117,16 @@ function MayaAvatar({ isSpeaking }: { isSpeaking: boolean }) {
             <motion.path
               d="M80 117 Q90 122 100 117"
               stroke="#e07050" strokeWidth="2" fill="none" strokeLinecap="round"
-              animate={{ d: isSpeaking ? ['M80 116 Q90 125 100 116', 'M80 117 Q90 120 100 117', 'M80 116 Q90 125 100 116'] : 'M80 117 Q90 122 100 117' }}
-              transition={{ duration: 0.4, repeat: isSpeaking ? Infinity : 0 }} />
+              animate={{ d: isSpeaking ? ['M80 116 Q90 125 100 116', 'M80 117 Q90 120 100 117', 'M80 116 Q90 125 100 116'] : isThinking ? ['M80 117 Q90 122 100 117', 'M81 118 Q90 120 99 118', 'M80 117 Q90 122 100 117'] : 'M80 117 Q90 122 100 117' }}
+              transition={{ duration: isSpeaking ? 0.4 : 1.2, repeat: isSpeaking || isThinking ? Infinity : 0 }} />
           </svg>
         </div>
-        {isSpeaking && (
+        {(isSpeaking || isThinking) && (
           <motion.div
             animate={{ scale: [1, 1.15, 1], opacity: [0.5, 0, 0.5] }}
-            transition={{ duration: 0.8, repeat: Infinity }}
-            className="absolute inset-0 rounded-full border-2 border-indigo-400 pointer-events-none"
+            transition={{ duration: isSpeaking ? 0.8 : 1.6, repeat: Infinity }}
+            className="absolute inset-0 rounded-full pointer-events-none"
+            style={{ border: `2px solid ${isSpeaking ? '#818cf8' : '#a78bfa'}` }}
           />
         )}
       </motion.div>
@@ -114,16 +135,18 @@ function MayaAvatar({ isSpeaking }: { isSpeaking: boolean }) {
 }
 
 /* ─── Avatar Panel ───────────────────────────────────────── */
-function AvatarPanel({ micOn, voiceOn, isSpeaking, onToggleMic, onToggleVoice, activeFile }: {
-  micOn: boolean; voiceOn: boolean; isSpeaking: boolean
+function AvatarPanel({ micOn, voiceOn, isSpeaking, isThinking, onToggleMic, onToggleVoice, activeFile }: {
+  micOn: boolean; voiceOn: boolean; isSpeaking: boolean; isThinking: boolean
   onToggleMic: () => void; onToggleVoice: () => void; activeFile: string | null
 }) {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-6 px-6 py-8">
-      <MayaAvatar isSpeaking={isSpeaking} />
+      <MayaAvatar isSpeaking={isSpeaking} isThinking={isThinking} />
       <div className="text-center">
         <h2 className="text-lg font-bold text-white tracking-wide">Maya</h2>
-        <p className="text-sm text-violet-300 mt-0.5">Your AI Tutor</p>
+        <p className="text-sm text-violet-300 mt-0.5">
+          {isThinking ? 'Thinking…' : isSpeaking ? 'Speaking…' : 'Your AI Tutor'}
+        </p>
       </div>
       <div className="flex gap-3">
         <button onClick={onToggleMic}
@@ -220,6 +243,7 @@ export default function TutorRoomPage() {
   const [showMobileMenu, setShowMobileMenu]       = useState(false)
   const [isSpeaking, setIsSpeaking]               = useState(false)
   const [isListening, setIsListening]             = useState(false)
+  const [isThinking, setIsThinking]               = useState(false)
 
   const bottomRef      = useRef<HTMLDivElement>(null)
   const scrollRef      = useRef<HTMLDivElement>(null)
@@ -247,6 +271,7 @@ export default function TutorRoomPage() {
       audioRef.current = null
       try { audioCtxRef.current?.suspend() } catch {}
       setIsSpeaking(false)
+      setIsThinking(false)
     }
   }, [voiceOn])
 
@@ -311,27 +336,8 @@ export default function TutorRoomPage() {
     }
   }, [])
 
-  const speakWebSpeech = useCallback((text: string) => {
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'en-US'
-    utterance.rate = 1.0
-    utterance.pitch = 1.05
-    utterance.volume = 1.0
-    const voices = window.speechSynthesis.getVoices()
-    const preferred = voices.find(v =>
-      /female|woman|zira|samantha|karen|moira|tessa/i.test(v.name)
-    ) || voices.find(v => v.lang.startsWith('en'))
-    if (preferred) utterance.voice = preferred
-    utterance.onstart = () => setIsSpeaking(true)
-    utterance.onend   = () => setIsSpeaking(false)
-    utterance.onerror = () => setIsSpeaking(false)
-    window.speechSynthesis.speak(utterance)
-  }, [])
-
-  /* Speak one chunk — resolves when audio finishes */
-  const speakChunk = useCallback(async (text: string): Promise<void> => {
-    if (!text.trim()) return
+  /* Fetch and decode TTS audio — no playback */
+  const fetchTTSAudio = useCallback(async (text: string): Promise<AudioBuffer | null> => {
     try {
       const res = await fetch('/api/tts', {
         method: 'POST',
@@ -339,60 +345,91 @@ export default function TutorRoomPage() {
         credentials: 'include',
         body: JSON.stringify({ text }),
       })
-      if (!res.ok) {
-        await new Promise<void>(resolve => {
-          const utt = new SpeechSynthesisUtterance(text)
-          utt.onend = () => resolve(); utt.onerror = () => resolve()
-          window.speechSynthesis.speak(utt)
-        })
-        return
-      }
+      if (!res.ok) return null
       const arrayBuf = await res.arrayBuffer()
       const ctx = audioCtxRef.current
-      if (!ctx) {
-        await new Promise<void>(resolve => {
-          const utt = new SpeechSynthesisUtterance(text)
-          utt.onend = () => resolve(); utt.onerror = () => resolve()
-          window.speechSynthesis.speak(utt)
-        })
-        return
-      }
+      if (!ctx) return null
       if (ctx.state === 'suspended') await ctx.resume()
-      const decoded = await ctx.decodeAudioData(arrayBuf)
-      await new Promise<void>(resolve => {
-        const source = ctx.createBufferSource()
-        source.buffer = decoded
-        source.connect(ctx.destination)
-        source.onended = () => resolve()
-        source.start(0)
-      })
-    } catch (err) {
-      console.warn('[TTS] Chunk error:', err)
+      return await ctx.decodeAudioData(arrayBuf)
+    } catch {
+      return null
     }
   }, [])
 
-  /* Drain the speak queue sequentially */
+  /* Play a decoded AudioBuffer — resolves when done */
+  const playAudioBuffer = useCallback((decoded: AudioBuffer): Promise<void> => {
+    return new Promise<void>(resolve => {
+      const ctx = audioCtxRef.current
+      if (!ctx) { resolve(); return }
+      const source = ctx.createBufferSource()
+      source.buffer = decoded
+      source.connect(ctx.destination)
+      source.onended = () => resolve()
+      source.start(0)
+    })
+  }, [])
+
+  /* Drain speak queue — prefetch N+1 while N is playing */
   const processSpeakQueue = useCallback(async () => {
     if (isProcessingQueue.current) return
     isProcessingQueue.current = true
     setIsSpeaking(true)
+
+    // Use a wrapper object so TypeScript doesn't lose track of type through closures
+    const slot: { prefetch: { text: string; promise: Promise<AudioBuffer | null> } | null } = { prefetch: null }
+
+    const kickPrefetch = () => {
+      if (speakQueueRef.current.length > 0 && voiceOnRef.current) {
+        const next = speakQueueRef.current[0]
+        if (!slot.prefetch || slot.prefetch.text !== next) {
+          slot.prefetch = { text: next, promise: fetchTTSAudio(next) }
+        }
+      }
+    }
+
     while (speakQueueRef.current.length > 0) {
       if (!voiceOnRef.current) break
       const chunk = speakQueueRef.current.shift()!
-      await speakChunk(chunk)
+
+      // Get audio: use matched prefetch (instant resolve) or fetch now
+      let audioPromise: Promise<AudioBuffer | null>
+      const p = slot.prefetch
+      if (p && p.text === chunk) {
+        audioPromise = p.promise
+        slot.prefetch = null
+      } else {
+        audioPromise = fetchTTSAudio(chunk)
+      }
+
+      // Start prefetching next chunk in parallel before awaiting current
+      kickPrefetch()
+
+      const audioBuffer = await audioPromise
+      if (!voiceOnRef.current) break
+
+      if (audioBuffer) {
+        await playAudioBuffer(audioBuffer)
+        kickPrefetch() // may have new items after playback
+      } else {
+        await new Promise<void>(resolve => {
+          const utt = new SpeechSynthesisUtterance(chunk)
+          utt.onend = () => resolve(); utt.onerror = () => resolve()
+          window.speechSynthesis.speak(utt)
+        })
+      }
     }
+
     isProcessingQueue.current = false
     if (speakQueueRef.current.length === 0) setIsSpeaking(false)
-  }, [speakChunk])
+  }, [fetchTTSAudio, playAudioBuffer])
 
-  /* Add a sentence to the TTS queue and start processing */
   const enqueueSpeech = useCallback((text: string) => {
     if (!text.trim()) return
     speakQueueRef.current.push(text)
     processSpeakQueue()
   }, [processSpeakQueue])
 
-  /* One-shot speak: clear queue then enqueue (used for non-streaming callers) */
+  /* One-shot speak: clear queue then enqueue */
   const speakText = useCallback((text: string) => {
     speakQueueRef.current = []
     isProcessingQueue.current = false
@@ -459,6 +496,7 @@ export default function TutorRoomPage() {
     setMessages(prev => [...prev, userMsg])
     setInput('')
     setIsStreaming(true)
+    setIsThinking(true)
 
     const history = messages.map(m => ({
       role: m.role === 'user' ? 'user' as const : 'model' as const,
@@ -482,10 +520,10 @@ export default function TutorRoomPage() {
       const decoder = new TextDecoder()
       let accumulated = ''
       let spokenUpTo = 0
+      let firstChunk = true
       while (true) {
         const { done, value } = await reader.read()
         if (done) {
-          // Enqueue any remaining unspoken text
           if (voiceOnRef.current) {
             const remaining = accumulated.slice(spokenUpTo).trim()
             if (remaining) enqueueSpeech(remaining)
@@ -493,32 +531,27 @@ export default function TutorRoomPage() {
           break
         }
         accumulated += decoder.decode(value, { stream: true })
+        if (firstChunk && accumulated.trim()) {
+          setIsThinking(false)
+          firstChunk = false
+        }
         setMessages(prev => prev.map(m => m.id === aiMsgId ? { ...m, content: accumulated } : m))
-        // Enqueue complete sentences as they stream in
         if (voiceOnRef.current) {
           const unspoken = accumulated.slice(spokenUpTo)
-          // Find last sentence boundary: .!? followed by whitespace or end
-          let lastBoundary = -1
-          for (let i = unspoken.length - 1; i >= 0; i--) {
-            if ('.!?'.includes(unspoken[i]) && (i === unspoken.length - 1 || /\s/.test(unspoken[i + 1]))) {
-              lastBoundary = i + 1
-              break
-            }
-          }
-          if (lastBoundary > 0) {
-            const toSpeak = unspoken.slice(0, lastBoundary).trim()
-            if (toSpeak) {
-              enqueueSpeech(toSpeak)
-              spokenUpTo += lastBoundary
-            }
+          const boundary = findSpeechBoundary(unspoken)
+          if (boundary > 0) {
+            const toSpeak = unspoken.slice(0, boundary).trim()
+            if (toSpeak) { enqueueSpeech(toSpeak); spokenUpTo += boundary }
           }
         }
       }
     } catch {
+      setIsThinking(false)
       setMessages(prev => prev.map(m =>
         m.id === aiMsgId ? { ...m, content: 'Sorry, something went wrong. Please try again.' } : m
       ))
     } finally {
+      setIsThinking(false)
       setIsStreaming(false)
     }
   }, [isStreaming, messages, router, enqueueSpeech])
@@ -550,7 +583,7 @@ export default function TutorRoomPage() {
     setVoiceOn(v => !v)
   }
 
-  const avatarProps = { micOn, voiceOn, isSpeaking, onToggleMic: toggleMic, onToggleVoice: toggleVoice, activeFile }
+  const avatarProps = { micOn, voiceOn, isSpeaking, isThinking, onToggleMic: toggleMic, onToggleVoice: toggleVoice, activeFile }
 
   return (
     <div
