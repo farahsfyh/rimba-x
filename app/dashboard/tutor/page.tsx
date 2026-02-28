@@ -1,7 +1,7 @@
 ﻿'use client'
 
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import ReactMarkdown from 'react-markdown'
 import { useUser } from '@/lib/hooks/useUser'
@@ -548,6 +548,20 @@ export default function TutorRoomPage() {
       bargeInStreamRef.current?.getTracks().forEach(t => t.stop())
       try { currentSourceRef.current?.stop() } catch {}
     }
+  }, [])
+
+  /* Pre-fill input from URL params (e.g. ?topic=X&context=Y from Notes page) */
+  const searchParams = useSearchParams()
+  useEffect(() => {
+    const topic = searchParams.get('topic')
+    const context = searchParams.get('context')
+    if (topic) {
+      const prefill = context
+        ? `Let's revisit "${topic}". I was working on: ${context}`
+        : `Can you explain "${topic}" again?`
+      setInput(prefill)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   /* Load documents for material selector */
