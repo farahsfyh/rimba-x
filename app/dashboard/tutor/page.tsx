@@ -74,8 +74,8 @@ function MayaAvatar({ isSpeaking, isThinking, isListening }: { isSpeaking: boole
       />
       {/* Idle bob */}
       <motion.div
-        animate={{ y: [0, -6, 0] }}
-        transition={{ duration: 3.5, repeat: Infinity, ease: 'easeInOut' }}
+        animate={{ y: [0, -5, 0] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
         className="relative w-44 h-44"
       >
         <div
@@ -237,8 +237,9 @@ function DarkChatBubble({ msg, userInitial, isStreamingThis }: {
   const isUser = msg.role === 'user'
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22 }}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
       className={`flex gap-3 w-full ${isUser ? 'flex-row-reverse' : ''}`}
     >
       <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold"
@@ -644,9 +645,26 @@ export default function TutorRoomPage() {
     setInput('')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rec = new SR() as any
-    rec.continuous = false
+    rec.continuous = true      // keep session alive across short pauses
     rec.interimResults = true
     rec.lang = 'en-US'
+
+    // Silence debounce: only send after this many ms of no new speech.
+    // Prevents cutting off mid-sentence on a brief pause.
+    const SILENCE_BEFORE_SEND_MS = 1100
+    let silenceTimer: ReturnType<typeof setTimeout> | null = null
+
+    const clearSilenceTimer = () => {
+      if (silenceTimer !== null) { clearTimeout(silenceTimer); silenceTimer = null }
+    }
+    const resetSilenceTimer = () => {
+      clearSilenceTimer()
+      silenceTimer = setTimeout(() => {
+        silenceTimer = null
+        // Stop recognition — triggers onend which sends the transcript
+        try { rec.stop() } catch {}
+      }, SILENCE_BEFORE_SEND_MS)
+    }
 
     rec.onresult = (event: any) => {
       // Barge-in: cut Maya off immediately — drain queue, stop ALL scheduled sources
@@ -665,9 +683,12 @@ export default function TutorRoomPage() {
         .join('')
       setInput(transcript)
       transcriptRef.current = transcript
+      // User is still speaking — reset the silence countdown
+      resetSilenceTimer()
     }
 
     rec.onend = () => {
+      clearSilenceTimer()
       recognitionRef.current = null
       setIsListening(false)
       const text = transcriptRef.current.trim()
@@ -682,6 +703,7 @@ export default function TutorRoomPage() {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     rec.onerror = (event: any) => {
+      clearSilenceTimer()
       recognitionRef.current = null
       setIsListening(false)
       if (liveModeRef.current && event.error !== 'not-allowed') {
@@ -878,22 +900,34 @@ export default function TutorRoomPage() {
   const avatarProps = { micOn, voiceOn, isSpeaking, isThinking, isListening, liveMode, onToggleMic: toggleMic, onToggleVoice: toggleVoice, onStartLive: startLiveMode, onStopLive: stopLiveMode, activeFile }
 
   return (
-    <div
+    <motion.div
       className="flex overflow-hidden rounded-2xl relative"
       style={{ height: 'calc(100vh - 6rem)', background: '#0F0F1A', boxShadow: '0 0 0 1px rgba(99,102,241,0.15), 0 24px 64px rgba(0,0,0,0.5)' }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
     >
       {/* ── LEFT: Avatar panel (desktop only) ── */}
-      <div
+      <motion.div
         className="hidden lg:flex flex-col w-[40%] shrink-0 relative"
         style={{ background: 'linear-gradient(180deg,#13122a 0%,#1a1840 100%)', borderRight: '1px solid rgba(139,92,246,0.25)' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
       >
         <div className="absolute top-0 right-0 w-64 h-64 pointer-events-none"
           style={{ background: 'radial-gradient(circle at 100% 0%,rgba(99,102,241,0.12) 0%,transparent 70%)' }} />
         <AvatarPanel {...avatarProps} />
-      </div>
+      </motion.div>
 
       {/* ── RIGHT: Chat panel ── */}
-      <div className="flex-1 flex flex-col min-w-0" style={{ background: '#16162a' }}>
+      <motion.div
+        className="flex-1 flex flex-col min-w-0"
+        style={{ background: '#16162a' }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+      >
 
         {/* Tablet avatar bar */}
         <div className="hidden md:flex lg:hidden flex-col">
@@ -987,8 +1021,11 @@ export default function TutorRoomPage() {
           className="flex-1 overflow-y-auto px-4 md:px-6 py-5 space-y-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center py-6">
-              <motion.div initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                transition={{ duration: 0.4, ease: 'easeOut' }} className="mb-6">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className="mb-6">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
                   style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 8px 24px rgba(99,102,241,0.4)' }}>
                   <Sparkles size={24} className="text-white" />
@@ -1008,8 +1045,9 @@ export default function TutorRoomPage() {
                     const Icon = s.icon
                     return (
                       <motion.button key={i}
-                        initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.1 + i * 0.07 }}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeOut', delay: i * 0.06 }}
                         onClick={() => sendMessage(s.prompt)}
                         className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium text-left whitespace-nowrap md:whitespace-normal transition-all hover:scale-[1.02] active:scale-[0.98]"
                         style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#c4b5fd', minHeight: 44 }}>
@@ -1094,7 +1132,7 @@ export default function TutorRoomPage() {
             Answers are based solely on your uploaded documents.
           </p>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Mobile: floating Maya button ── */}
       <motion.button
@@ -1134,7 +1172,7 @@ export default function TutorRoomPage() {
           </>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   )
 }
 
