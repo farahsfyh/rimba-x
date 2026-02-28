@@ -28,7 +28,28 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { message, history = [] } = body
+    const { message } = body
+    // Validate and sanitize history: cap entries + per-entry length to prevent token abuse
+    const MAX_HISTORY_ENTRIES = 20
+    const MAX_HISTORY_ENTRY_LENGTH = 2000
+    const rawHistory: unknown[] = Array.isArray(body.history) ? body.history : []
+    const history = rawHistory
+        .slice(-MAX_HISTORY_ENTRIES)
+        .filter(
+            (e): e is { role: 'user' | 'model'; content: string } =>
+                typeof e === 'object' &&
+                e !== null &&
+                (e as Record<string, unknown>).role === 'user' ||
+                (typeof e === 'object' &&
+                e !== null &&
+                (e as Record<string, unknown>).role === 'model')
+        )
+        .map((e) => ({
+            role: e.role,
+            content: typeof e.content === 'string'
+                ? e.content.slice(0, MAX_HISTORY_ENTRY_LENGTH)
+                : '',
+        }))
 
     if (!message || typeof message !== 'string') {
         return new Response(JSON.stringify({ error: 'Message is required' }), { status: 400 })
@@ -38,11 +59,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limit per authenticated user
-    const { allowed } = checkRateLimit(user.id, CHAT_LIMIT)
+    const { allowed, resetInMs } = await checkRateLimit(user.id, CHAT_LIMIT)
     if (!allowed) {
         return new Response(
             JSON.stringify({ error: 'Too many messages. Please wait a moment before sending more.' }),
-            { status: 429, headers: { 'Content-Type': 'application/json' } }
+            { status: 429, headers: { 'Content-Type': 'application/json', 'Retry-After': String(Math.ceil(resetInMs / 1000)) } }
         )
     }
 

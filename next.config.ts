@@ -11,10 +11,10 @@ const nextConfig: NextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net",
+              "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: https: blob:",
+              "img-src 'self' data: blob: https://*.supabase.co https://readyplayer.me",
               "connect-src 'self' https://*.supabase.co https://speech.googleapis.com https://texttospeech.googleapis.com https://generativelanguage.googleapis.com",
               "frame-src 'self' https://readyplayer.me",
             ].join('; '),

@@ -11,11 +11,13 @@
   "dependencies": {
     "@google-cloud/speech": "^7.2.1",
     "@google-cloud/text-to-speech": "^6.4.0",
+    "@google/genai": "^1.43.0",
     "@google/generative-ai": "^0.24.1",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.95.3",
+    "@upstash/redis": "^1.36.3",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "express-rate-limit": "^8.2.1",

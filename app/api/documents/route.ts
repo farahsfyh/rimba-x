@@ -14,8 +14,11 @@ const getServiceClient = () =>
 export async function GET(request: NextRequest) {
   try {
     const ip = getClientIp(request)
-    const { allowed } = checkRateLimit(ip, API_LIMIT)
-    if (!allowed) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 })
+    const { allowed, resetInMs } = await checkRateLimit(ip, API_LIMIT)
+    if (!allowed) return NextResponse.json(
+      { error: 'Too many requests.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(resetInMs / 1000)) } }
+    )
 
     const supabase = await createClient()
     const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('[documents] GET error:', JSON.stringify(error))
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: 'An internal error occurred.' }, { status: 500 })
     }
     return NextResponse.json({ documents: data })
   } catch (e) {
@@ -44,6 +47,13 @@ export async function DELETE(request: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Rate limit DELETE by user ID to prevent bulk-delete abuse
+  const { allowed: deleteAllowed, resetInMs: deleteResetInMs } = await checkRateLimit(user.id, API_LIMIT)
+  if (!deleteAllowed) return NextResponse.json(
+    { error: 'Too many requests.' },
+    { status: 429, headers: { 'Retry-After': String(Math.ceil(deleteResetInMs / 1000)) } }
+  )
 
   const serviceClient = getServiceClient()
   const { id } = await request.json()
@@ -66,7 +76,7 @@ export async function DELETE(request: NextRequest) {
 
   if (deleteError) {
     console.error('[documents] DELETE error:', JSON.stringify(deleteError))
-    return NextResponse.json({ error: deleteError.message }, { status: 500 })
+    return NextResponse.json({ error: 'An internal error occurred.' }, { status: 500 })
   }
   return NextResponse.json({ success: true })
 }

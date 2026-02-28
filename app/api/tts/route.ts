@@ -37,8 +37,11 @@ export async function POST(req: NextRequest) {
     if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
     // Rate limit per user ID (more accurate than IP for authenticated routes)
-    const { allowed } = checkRateLimit(user.id, TTS_LIMIT)
-    if (!allowed) return NextResponse.json({ error: 'Too many TTS requests, please slow down.' }, { status: 429 })
+    const { allowed, resetInMs } = await checkRateLimit(user.id, TTS_LIMIT)
+    if (!allowed) return NextResponse.json(
+      { error: 'Too many TTS requests, please slow down.' },
+      { status: 429, headers: { 'Retry-After': String(Math.ceil(resetInMs / 1000)) } }
+    )
 
     const { text } = await req.json()
     if (!text?.trim()) return NextResponse.json({ error: 'No text provided' }, { status: 400 })
@@ -69,7 +72,7 @@ export async function POST(req: NextRequest) {
     if (!resp.ok) {
       const errText = await resp.text()
       console.error('[TTS] Gemini API error:', resp.status, errText)
-      return NextResponse.json({ error: errText }, { status: 501 })
+      return NextResponse.json({ error: 'Failed to generate audio. Please try again.' }, { status: 502 })
     }
 
     const data = await resp.json()
@@ -94,7 +97,7 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error('[TTS] Error:', msg)
-    return NextResponse.json({ error: msg }, { status: 501 })
+    return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 })
   }
 }
 

@@ -48,8 +48,11 @@ export async function POST(request: NextRequest) {
 
   // Rate limit by IP (formData parsed before auth check, so use IP here)
   const ip = getClientIp(request)
-  const { allowed } = checkRateLimit(ip, UPLOAD_LIMIT)
-  if (!allowed) return NextResponse.json({ error: 'Too many uploads. Please try again later.' }, { status: 429 })
+  const { allowed, resetInMs } = await checkRateLimit(ip, UPLOAD_LIMIT)
+  if (!allowed) return NextResponse.json(
+    { error: 'Too many uploads. Please try again later.' },
+    { status: 429, headers: { 'Retry-After': String(Math.ceil(resetInMs / 1000)) } }
+  )
 
   // Validate file size before reading into memory
   if (file.size > MAX_FILE_SIZE_BYTES) {

@@ -1,13 +1,23 @@
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit, AUTH_LIMIT } from '@/lib/security/rate-limit'
 
-export async function POST() {
+export async function POST(request: NextRequest) {
     // Verify user is authenticated
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Rate limit by user ID to prevent DB spam
+    const { allowed, resetInMs } = await checkRateLimit(user.id, AUTH_LIMIT)
+    if (!allowed) {
+        return NextResponse.json(
+            { error: 'Too many requests. Please try again later.' },
+            { status: 429, headers: { 'Retry-After': String(Math.ceil(resetInMs / 1000)) } }
+        )
     }
 
     // Use service role client for writes
@@ -38,7 +48,7 @@ export async function POST() {
 
     if (progressError) {
         console.error('[init-user] progress error:', progressError)
-        return NextResponse.json({ error: progressError.message }, { status: 500 })
+        return NextResponse.json({ error: 'An internal error occurred.' }, { status: 500 })
     }
 
     // Create user_stats row
@@ -52,7 +62,7 @@ export async function POST() {
 
     if (statsError) {
         console.error('[init-user] stats error:', statsError)
-        return NextResponse.json({ error: statsError.message }, { status: 500 })
+        return NextResponse.json({ error: 'An internal error occurred.' }, { status: 500 })
     }
 
     return NextResponse.json({ message: 'User initialized successfully' })
