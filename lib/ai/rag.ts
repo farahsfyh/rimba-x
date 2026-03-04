@@ -25,7 +25,7 @@ export async function storeDocumentChunks(
   for (let i = 0; i < chunks.length; i++) {
     const chunk = chunks[i];
     const embedding = await generateEmbedding(chunk);
-    
+
     const { error } = await getSupabase().from('document_embeddings').insert({
       user_id: userId,
       document_id: documentId,
@@ -33,12 +33,12 @@ export async function storeDocumentChunks(
       content: chunk,
       embedding: embedding,
     });
-    
+
     if (error) {
       console.error(`Error storing chunk ${i}:`, error);
       throw error;
     }
-    
+
     // Small delay to avoid rate limits
     await new Promise(resolve => setTimeout(resolve, 100));
   }
@@ -77,6 +77,7 @@ export async function findRelevantChunks(
   // Default mode: cross-document vector similarity search
   const queryEmbedding = await generateEmbedding(query);
 
+  // Use Supabase function for similarity search
   // threshold 0.4: broad enough to catch paraphrased questions, strict enough to exclude noise
   const { data, error } = await getSupabase().rpc('match_documents', {
     query_embedding: queryEmbedding,
@@ -125,7 +126,7 @@ export async function deleteDocumentEmbeddings(
     .from('document_embeddings')
     .delete()
     .eq('document_id', documentId);
-  
+
   if (error) {
     console.error('Error deleting embeddings:', error);
     throw error;
@@ -142,11 +143,11 @@ export async function getDocumentChunkCount(
     .from('document_embeddings')
     .select('*', { count: 'exact', head: true })
     .eq('document_id', documentId);
-  
+
   if (error) {
     console.error('Error counting chunks:', error);
     throw error;
   }
-  
+
   return count || 0;
 }

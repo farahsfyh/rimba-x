@@ -41,8 +41,8 @@ export async function POST(request: NextRequest) {
                 e !== null &&
                 (e as Record<string, unknown>).role === 'user' ||
                 (typeof e === 'object' &&
-                e !== null &&
-                (e as Record<string, unknown>).role === 'model')
+                    e !== null &&
+                    (e as Record<string, unknown>).role === 'model')
         )
         .map((e) => ({
             role: e.role,

@@ -12,11 +12,11 @@ if (typeof globalThis.DOMMatrix === 'undefined') {
 }
 if (typeof globalThis.ImageData === 'undefined') {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (globalThis as any).ImageData = class ImageData {};
+  (globalThis as any).ImageData = class ImageData { };
 }
 if (typeof globalThis.Path2D === 'undefined') {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (globalThis as any).Path2D = class Path2D {};
+  (globalThis as any).Path2D = class Path2D { };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -66,12 +66,13 @@ export async function parsePDF(file: File): Promise<ParsedDocument> {
   const parser = new PDFParse({ data: buffer });
   const result = await parser.getText();
 
-  let text: string = result.text.trim();
+  let text: string = result.text.replace(/\0/g, '').trim();
   const wordCount = text.split(/\s+/).filter(Boolean).length;
 
   if (wordCount < OCR_FALLBACK_THRESHOLD) {
     // PDF has little or no extractable text — use Gemini vision OCR
     text = await parsePDFWithGemini(buffer);
+    text = text.replace(/\0/g, '').trim();
   }
 
   return {
