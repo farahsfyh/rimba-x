@@ -32,16 +32,16 @@ interface Message {
 }
 interface DocumentInfo { id: string; filename: string; title?: string | null }
 type TeachingMode = 'focused' | 'balanced' | 'exploratory'
-type VoiceTone    = 'warm' | 'professional' | 'casual'
+type VoiceTone = 'warm' | 'professional' | 'casual'
 interface TutorSettings { teachingMode: TeachingMode; voiceTone: VoiceTone; focusDocumentIds: string[] }
 const DEFAULT_SETTINGS: TutorSettings = { teachingMode: 'balanced', voiceTone: 'warm', focusDocumentIds: [] }
 
 /* ─── Constants ─────────────────────────────────────────── */
 const SUGGESTED_PROMPTS = [
-  { icon: BookOpen,  label: 'Summarise materials', prompt: 'Summarise the key points from my uploaded materials.' },
-  { icon: Lightbulb, label: 'Explain a concept',   prompt: 'Explain the main concepts covered in my uploaded documents.' },
-  { icon: Brain,     label: 'Quiz me',              prompt: 'Create 5 quiz questions based strictly on my uploaded materials.' },
-  { icon: Sparkles,  label: 'Key terms',            prompt: 'List and define the important terms found in my uploaded documents.' },
+  { icon: BookOpen, label: 'Summarise materials', prompt: 'Summarise the key points from my uploaded materials.' },
+  { icon: Lightbulb, label: 'Explain a concept', prompt: 'Explain the main concepts covered in my uploaded documents.' },
+  { icon: Brain, label: 'Quiz me', prompt: 'Create 5 quiz questions based strictly on my uploaded materials.' },
+  { icon: Sparkles, label: 'Key terms', prompt: 'List and define the important terms found in my uploaded documents.' },
 ]
 
 function formatTime(d: Date) {
@@ -175,7 +175,7 @@ function AvatarPanel({ micOn, voiceOn, isSpeaking, isThinking, isListening, live
           initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
           className="text-sm mt-0.5 font-medium"
           style={{ color: liveMode ? liveStatusColor : '#c4b5fd', transition: 'color 0.3s' }}>
-          {liveMode ? liveStatusLabel : (isThinking ? 'Thinking…' : isSpeaking ? 'Speaking…' : 'Your AI Tutor')}
+          {liveMode ? liveStatusLabel : (isThinking ? 'Thinking…' : isSpeaking ? 'Speaking…' : 'Cikgu Maya')}
         </motion.p>
       </div>
 
@@ -221,7 +221,7 @@ function AvatarPanel({ micOn, voiceOn, isSpeaking, isThinking, isListening, live
               onClick={onStartLive}
               className="flex items-center gap-2.5 px-6 py-3 rounded-full text-sm font-semibold w-full justify-center transition-all hover:scale-105 active:scale-95"
               style={{ background: 'linear-gradient(135deg,rgba(99,102,241,0.2),rgba(139,92,246,0.2))', border: '1px solid rgba(139,92,246,0.5)', color: '#c4b5fd', minHeight: 48 }}
-              animate={{ boxShadow: ['0 0 16px rgba(99,102,241,0.12)','0 0 28px rgba(139,92,246,0.28)','0 0 16px rgba(99,102,241,0.12)'] }}
+              animate={{ boxShadow: ['0 0 16px rgba(99,102,241,0.12)', '0 0 28px rgba(139,92,246,0.28)', '0 0 16px rgba(99,102,241,0.12)'] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}>
               <Mic size={15} />
               Start Live Conversation
@@ -246,7 +246,7 @@ function AvatarPanel({ micOn, voiceOn, isSpeaking, isThinking, isListening, live
       </AnimatePresence>
 
       <div className="flex items-center gap-2 px-4 py-2 rounded-full text-xs text-slate-300 max-w-[220px]"
-          style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
         <FileText size={12} className="text-indigo-400 shrink-0" />
         <span className="truncate">{activeFile ?? 'No resources loaded'}</span>
       </div>
@@ -280,7 +280,7 @@ function DarkChatBubble({ msg, userInitial, isStreamingThis }: {
         }>
         {isStreamingThis && msg.content === '' ? (
           <div className="flex items-center gap-1 py-0.5">
-            {[0,1,2].map(i => (
+            {[0, 1, 2].map(i => (
               <span key={i} className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce"
                 style={{ animationDelay: `${i * 150}ms` }} />
             ))}
@@ -322,14 +322,14 @@ function SettingsModal({
   documents: DocumentInfo[]
 }) {
   const modeOptions: Array<{ value: TeachingMode; label: string; desc: string }> = [
-    { value: 'focused',     label: 'Focused',     desc: 'Strictly from your materials' },
-    { value: 'balanced',    label: 'Balanced',    desc: 'Materials + helpful analogies when stuck' },
+    { value: 'focused', label: 'Focused', desc: 'Strictly from your materials' },
+    { value: 'balanced', label: 'Balanced', desc: 'Materials + helpful analogies when stuck' },
     { value: 'exploratory', label: 'Exploratory', desc: 'Broader context & real-world bridging' },
   ]
   const toneOptions: Array<{ value: VoiceTone; label: string; desc: string }> = [
-    { value: 'warm',         label: 'Warm',         desc: 'Encouraging & collaborative' },
+    { value: 'warm', label: 'Warm', desc: 'Encouraging & collaborative' },
     { value: 'professional', label: 'Professional', desc: 'Direct & measured, like a lecturer' },
-    { value: 'casual',       label: 'Casual',       desc: 'Relaxed, like a smart study buddy' },
+    { value: 'casual', label: 'Casual', desc: 'Relaxed, like a smart study buddy' },
   ]
   const allSelected = settings.focusDocumentIds.length === 0
   const toggleDoc = (id: string) => {
@@ -445,51 +445,51 @@ function SettingsModal({
 }
 
 /* ─── Main Page ─────────────────────────────────────────── */
-export default function TutorRoomPage() {
+function TutorRoomContent() {
   const { user, loading } = useUser()
   const router = useRouter()
 
-  const [messages, setMessages]           = useState<Message[]>([])
-  const [input, setInput]                 = useState('')
-  const [isStreaming, setIsStreaming]      = useState(false)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [input, setInput] = useState('')
+  const [isStreaming, setIsStreaming] = useState(false)
   const [showScrollBtn, setShowScrollBtn] = useState(false)
-  const [micOn, setMicOn]                 = useState(false)
-  const [voiceOn, setVoiceOn]             = useState(false)
-  const [activeFile, setActiveFile]       = useState<string | null>(null)
-  const [showMobileAvatar, setShowMobileAvatar]   = useState(false)
-  const [tabletExpanded, setTabletExpanded]       = useState(false)
-  const [showMobileMenu, setShowMobileMenu]       = useState(false)
-  const [isSpeaking, setIsSpeaking]               = useState(false)
-  const [isListening, setIsListening]             = useState(false)
-  const [isThinking, setIsThinking]               = useState(false)
-  const [liveMode, setLiveMode]                   = useState(false)
-  const [tutorSettings, setTutorSettings]         = useState<TutorSettings>(DEFAULT_SETTINGS)
-  const [documents, setDocuments]                 = useState<DocumentInfo[]>([])
-  const [showSettings, setShowSettings]           = useState(false)
+  const [micOn, setMicOn] = useState(false)
+  const [voiceOn, setVoiceOn] = useState(false)
+  const [activeFile, setActiveFile] = useState<string | null>(null)
+  const [showMobileAvatar, setShowMobileAvatar] = useState(false)
+  const [tabletExpanded, setTabletExpanded] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const [isThinking, setIsThinking] = useState(false)
+  const [liveMode, setLiveMode] = useState(false)
+  const [tutorSettings, setTutorSettings] = useState<TutorSettings>(DEFAULT_SETTINGS)
+  const [documents, setDocuments] = useState<DocumentInfo[]>([])
+  const [showSettings, setShowSettings] = useState(false)
 
-  const bottomRef      = useRef<HTMLDivElement>(null)
-  const scrollRef      = useRef<HTMLDivElement>(null)
-  const textareaRef    = useRef<HTMLTextAreaElement>(null)
+  const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null)
-  const transcriptRef  = useRef('')
-  const sendMessageRef = useRef<(text: string) => void>(() => {})
-  const voiceOnRef          = useRef(voiceOn)
-  const speakQueueRef       = useRef<string[]>([])
-  const isProcessingQueue   = useRef(false)
-  const liveModeRef         = useRef(false)
-  const isStreamingRef      = useRef(false)
-  const isSpeakingRef       = useRef(false)
-  const currentSourceRef    = useRef<AudioBufferSourceNode | null>(null)
-  const activeSourcesRef    = useRef<AudioBufferSourceNode[]>([])
-  const scheduleEndTimeRef  = useRef<number>(0)
+  const transcriptRef = useRef('')
+  const sendMessageRef = useRef<(text: string) => void>(() => { })
+  const voiceOnRef = useRef(voiceOn)
+  const speakQueueRef = useRef<string[]>([])
+  const isProcessingQueue = useRef(false)
+  const liveModeRef = useRef(false)
+  const isStreamingRef = useRef(false)
+  const isSpeakingRef = useRef(false)
+  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null)
+  const activeSourcesRef = useRef<AudioBufferSourceNode[]>([])
+  const scheduleEndTimeRef = useRef<number>(0)
   const lastAudioStopTimeRef = useRef<number>(0)   // ms timestamp — for echo-decay cooldown
-  const startLiveListenRef  = useRef<() => void>(() => {})
-  const bargeInAnalyserRef  = useRef<AnalyserNode | null>(null)
-  const bargeInStreamRef    = useRef<MediaStream | null>(null)
-  const bargeInFrameRef     = useRef<number>(0)
-  const settingsRef         = useRef<TutorSettings>(DEFAULT_SETTINGS)
-  const documentsRef        = useRef<DocumentInfo[]>([])
+  const startLiveListenRef = useRef<() => void>(() => { })
+  const bargeInAnalyserRef = useRef<AnalyserNode | null>(null)
+  const bargeInStreamRef = useRef<MediaStream | null>(null)
+  const bargeInFrameRef = useRef<number>(0)
+  const settingsRef = useRef<TutorSettings>(DEFAULT_SETTINGS)
+  const documentsRef = useRef<DocumentInfo[]>([])
 
   const userInitial = (user?.user_metadata?.full_name || user?.email || 'U').charAt(0).toUpperCase()
 
@@ -515,12 +515,12 @@ export default function TutorRoomPage() {
       window.speechSynthesis?.cancel()
       audioRef.current?.pause()
       audioRef.current = null
-      activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch {} })
+      activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch { } })
       activeSourcesRef.current = []
       currentSourceRef.current = null
       if (audioCtxRef.current) scheduleEndTimeRef.current = audioCtxRef.current.currentTime
       lastAudioStopTimeRef.current = Date.now()
-      try { audioCtxRef.current?.suspend() } catch {}
+      try { audioCtxRef.current?.suspend() } catch { }
       setIsSpeaking(false)
       setIsThinking(false)
     }
@@ -546,7 +546,7 @@ export default function TutorRoomPage() {
       recognitionRef.current?.stop()
       cancelAnimationFrame(bargeInFrameRef.current)
       bargeInStreamRef.current?.getTracks().forEach(t => t.stop())
-      try { currentSourceRef.current?.stop() } catch {}
+      try { currentSourceRef.current?.stop() } catch { }
     }
   }, [])
 
@@ -561,7 +561,7 @@ export default function TutorRoomPage() {
         : `Can you explain "${topic}" again?`
       setInput(prefill)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   /* Load documents for material selector */
@@ -574,7 +574,7 @@ export default function TutorRoomPage() {
           setActiveFile(d.documents[0].filename)
         }
       })
-      .catch(() => {})
+      .catch(() => { })
   }, [])
 
   /* Auto scroll */
@@ -597,7 +597,7 @@ export default function TutorRoomPage() {
   }
 
   /* ── TTS ─────────────────────────────────────────────── */
-  const audioRef    = useRef<HTMLAudioElement | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const audioCtxRef = useRef<AudioContext | null>(null)
 
   // Unlock AudioContext on first user interaction (needed for autoplay policy)
@@ -786,7 +786,7 @@ export default function TutorRoomPage() {
           speakQueueRef.current = []
           isProcessingQueue.current = false
           window.speechSynthesis?.cancel()
-          activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch {} })
+          activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch { } })
           activeSourcesRef.current = []
           currentSourceRef.current = null
           if (audioCtxRef.current) scheduleEndTimeRef.current = audioCtxRef.current.currentTime
@@ -810,7 +810,7 @@ export default function TutorRoomPage() {
     isProcessingQueue.current = false
     window.speechSynthesis?.cancel()
     // Stop every scheduled/playing source, not just the last one
-    activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch {} })
+    activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch { } })
     activeSourcesRef.current = []
     currentSourceRef.current = null
     // Reset schedule pointer so next playback starts from now
@@ -858,7 +858,7 @@ export default function TutorRoomPage() {
       silenceTimer = setTimeout(() => {
         silenceTimer = null
         // Stop recognition — triggers onend which sends the transcript
-        try { rec.stop() } catch {}
+        try { rec.stop() } catch { }
       }, SILENCE_BEFORE_SEND_MS)
     }
 
@@ -868,7 +868,7 @@ export default function TutorRoomPage() {
         speakQueueRef.current = []
         isProcessingQueue.current = false
         window.speechSynthesis?.cancel()
-        activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch {} })
+        activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch { } })
         activeSourcesRef.current = []
         currentSourceRef.current = null
         if (audioCtxRef.current) scheduleEndTimeRef.current = audioCtxRef.current.currentTime
@@ -933,7 +933,7 @@ export default function TutorRoomPage() {
     speakQueueRef.current = []
     isProcessingQueue.current = false
     window.speechSynthesis?.cancel()
-    activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch {} })
+    activeSourcesRef.current.forEach(s => { try { s.stop(0) } catch { } })
     activeSourcesRef.current = []
     currentSourceRef.current = null
     if (audioCtxRef.current) scheduleEndTimeRef.current = audioCtxRef.current.currentTime
@@ -999,7 +999,7 @@ export default function TutorRoomPage() {
     setInput('')
     // Stop any active recognition so it doesn't re-trigger
     if (recognitionRef.current) {
-      try { (recognitionRef.current as any).abort?.() || recognitionRef.current.stop() } catch {}
+      try { (recognitionRef.current as any).abort?.() || recognitionRef.current.stop() } catch { }
       recognitionRef.current = null
       setIsListening(false)
     }
@@ -1017,8 +1017,8 @@ export default function TutorRoomPage() {
     try {
       const focusDocumentTitles = settingsRef.current.focusDocumentIds.length > 0
         ? documentsRef.current
-            .filter(d => settingsRef.current.focusDocumentIds.includes(d.id))
-            .map(d => d.title || d.filename)
+          .filter(d => settingsRef.current.focusDocumentIds.includes(d.id))
+          .map(d => d.title || d.filename)
         : []
       const res = await fetch('/api/chat', {
         method: 'POST',
@@ -1366,7 +1366,7 @@ export default function TutorRoomPage() {
         style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 0 0 3px rgba(99,102,241,0.25),0 8px 24px rgba(99,102,241,0.5)' }}
         onClick={() => setShowMobileAvatar(true)}
         whileTap={{ scale: 0.92 }}
-        animate={{ boxShadow: ['0 0 0 3px rgba(99,102,241,0.25),0 8px 24px rgba(99,102,241,0.5)','0 0 0 7px rgba(99,102,241,0.08),0 8px 24px rgba(99,102,241,0.5)','0 0 0 3px rgba(99,102,241,0.25),0 8px 24px rgba(99,102,241,0.5)'] }}
+        animate={{ boxShadow: ['0 0 0 3px rgba(99,102,241,0.25),0 8px 24px rgba(99,102,241,0.5)', '0 0 0 7px rgba(99,102,241,0.08),0 8px 24px rgba(99,102,241,0.5)', '0 0 0 3px rgba(99,102,241,0.25),0 8px 24px rgba(99,102,241,0.5)'] }}
         transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}>
         M
       </motion.button>
@@ -1399,6 +1399,14 @@ export default function TutorRoomPage() {
         )}
       </AnimatePresence>
     </motion.div>
+  )
+}
+
+export default function TutorRoomPage() {
+  return (
+    <React.Suspense fallback={<div className="flex h-screen items-center justify-center text-slate-400">Loading...</div>}>
+      <TutorRoomContent />
+    </React.Suspense>
   )
 }
 

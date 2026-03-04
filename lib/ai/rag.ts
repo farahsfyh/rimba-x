@@ -1,12 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 import { generateEmbedding } from './embeddings';
 
 // Lazy-init: only instantiated when a DB function is called (always server-side).
 // Prevents crashes if this module is ever imported in a client bundle.
-let _supabase: ReturnType<typeof createClient> | null = null
-function getSupabase() {
+let _supabase: any = null
+function getSupabase(): any {
   if (!_supabase) {
-    _supabase = createClient(
+    _supabase = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
@@ -71,7 +72,7 @@ export async function findRelevantChunks(
       throw error;
     }
 
-    return (data || []).map(row => ({ content: row.content, similarity: 1 }));
+    return (data || []).map((row: any) => ({ content: row.content, similarity: 1 }));
   }
 
   // Default mode: cross-document vector similarity search

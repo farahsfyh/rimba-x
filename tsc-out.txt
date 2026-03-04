@@ -1,0 +1,70 @@
+﻿app/dashboard/notes/page.tsx(7,13): error TS2305: Module '"lucide-react"' has no exported member 'Plus'.
+app/dashboard/notes/page.tsx(7,19): error TS2305: Module '"lucide-react"' has no exported member 'Pencil'.
+app/dashboard/notes/page.tsx(7,27): error TS2305: Module '"lucide-react"' has no exported member 'Download'.
+app/dashboard/notes/page.tsx(7,40): error TS2305: Module '"lucide-react"' has no exported member 'Check'.
+app/dashboard/notes/page.tsx(7,47): error TS2305: Module '"lucide-react"' has no exported member 'RefreshCw'.
+app/dashboard/notes/page.tsx(8,3): error TS2305: Module '"lucide-react"' has no exported member 'MessageCircle'.
+app/dashboard/notes/page.tsx(8,18): error TS2305: Module '"lucide-react"' has no exported member 'ChevronDown'.
+app/dashboard/notes/page.tsx(8,31): error TS2305: Module '"lucide-react"' has no exported member 'Loader2'.
+app/dashboard/notes/page.tsx(8,40): error TS2305: Module '"lucide-react"' has no exported member 'AlertCircle'.
+app/dashboard/notes/page.tsx(8,53): error TS2305: Module '"lucide-react"' has no exported member 'StickyNote'.
+app/dashboard/notes/page.tsx(9,27): error TS2305: Module '"lucide-react"' has no exported member 'Lightbulb'.
+app/dashboard/progress/page.tsx(5,69): error TS2305: Module '"lucide-react"' has no exported member 'Star'.
+app/dashboard/progress/page.tsx(29,59): error TS2339: Property 'data' does not exist on type 'never'.
+app/dashboard/progress/page.tsx(30,50): error TS2339: Property 'data' does not exist on type 'never'.
+app/dashboard/tutor/page.tsx(9,3): error TS2305: Module '"lucide-react"' has no exported member 'Send'.
+app/dashboard/tutor/page.tsx(13,3): error TS2305: Module '"lucide-react"' has no exported member 'Lightbulb'.
+app/dashboard/tutor/page.tsx(14,3): error TS2305: Module '"lucide-react"' has no exported member 'RotateCcw'.
+app/dashboard/tutor/page.tsx(15,3): error TS2305: Module '"lucide-react"' has no exported member 'ChevronDown'.
+app/dashboard/tutor/page.tsx(17,3): error TS2305: Module '"lucide-react"' has no exported member 'MicOff'.
+app/dashboard/tutor/page.tsx(18,3): error TS2305: Module '"lucide-react"' has no exported member 'Volume2'.
+app/dashboard/tutor/page.tsx(19,3): error TS2305: Module '"lucide-react"' has no exported member 'VolumeX'.
+app/dashboard/tutor/page.tsx(21,3): error TS2305: Module '"lucide-react"' has no exported member 'MoreVertical'.
+app/dashboard/upload/page.tsx(5,20): error TS2305: Module '"lucide-react"' has no exported member 'CircleCheck'.
+app/dashboard/upload/page.tsx(5,33): error TS2305: Module '"lucide-react"' has no exported member 'CircleAlert'.
+app/dashboard/upload/page.tsx(5,46): error TS2305: Module '"lucide-react"' has no exported member 'Trash2'.
+app/dashboard/upload/page.tsx(5,62): error TS2305: Module '"lucide-react"' has no exported member 'FileSpreadsheet'.
+lib/ai/rag.ts(29,71): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: string; }, never, never, null, "document_embeddings", never, "POST">', gave the following error.
+    Argument of type '{ user_id: string; document_id: string; chunk_index: number; content: string; embedding: number[]; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: string; }, never, never, null, "document_embeddings", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+lib/ai/rag.ts(74,52): error TS2339: Property 'content' does not exist on type 'never'.
+lib/ai/rag.ts(82,70): error TS2345: Argument of type '{ query_embedding: number[]; match_threshold: number; match_count: number; user_id: string; }' is not assignable to parameter of type 'undefined'.
+lib/gamification/index.ts(79,29): error TS2339: Property 'level' does not exist on type 'never'.
+lib/gamification/index.ts(80,26): error TS2339: Property 'xp' does not exist on type 'never'.
+lib/gamification/index.ts(87,13): error TS2345: Argument of type '{ xp: any; level: number; }' is not assignable to parameter of type 'never'.
+lib/gamification/index.ts(117,40): error TS2339: Property 'last_active_date' does not exist on type 'never'.
+lib/gamification/index.ts(121,28): error TS2339: Property 'streak' does not exist on type 'never'.
+lib/gamification/index.ts(128,26): error TS2339: Property 'streak' does not exist on type 'never'.
+lib/gamification/index.ts(131,26): error TS2339: Property 'streak' does not exist on type 'never'.
+lib/gamification/index.ts(152,13): error TS2345: Argument of type '{ streak: any; last_active_date: string; }' is not assignable to parameter of type 'never'.
+lib/gamification/index.ts(198,52): error TS2339: Property 'achievement_id' does not exist on type 'never'.
+lib/gamification/index.ts(210,24): error TS2339: Property 'total_sessions' does not exist on type 'never'.
+lib/gamification/index.ts(218,24): error TS2339: Property 'total_sessions' does not exist on type 'never'.
+lib/gamification/index.ts(226,24): error TS2339: Property 'total_questions' does not exist on type 'never'.
+lib/gamification/index.ts(234,27): error TS2339: Property 'streak' does not exist on type 'never'.
+lib/gamification/index.ts(242,27): error TS2339: Property 'streak' does not exist on type 'never'.
+lib/gamification/index.ts(250,24): error TS2339: Property 'topics_completed' does not exist on type 'never'.
+lib/gamification/index.ts(258,24): error TS2339: Property 'study_time' does not exist on type 'never'.
+lib/gamification/index.ts(266,27): error TS2339: Property 'level' does not exist on type 'never'.
+lib/gamification/index.ts(274,53): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: string; }, never, never, null, "user_achievements", never, "POST">', gave the following error.
+    Argument of type '{ user_id: string; achievement_id: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: string; }, never, never, null, "user_achievements", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+lib/gamification/index.ts(300,45): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: string; }, never, never, null, "user_progress", never, "POST">', gave the following error.
+    Argument of type '{ user_id: string; level: number; xp: number; streak: number; last_active_date: string; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: string; }, never, never, null, "user_progress", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+lib/gamification/index.ts(309,42): error TS2769: No overload matches this call.
+  Overload 1 of 2, '(values: never, options?: { count?: "exact" | "planned" | "estimated" | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: string; }, never, never, null, "user_stats", never, "POST">', gave the following error.
+    Argument of type '{ user_id: string; total_sessions: number; total_questions: number; topics_completed: number; study_time: number; }' is not assignable to parameter of type 'never'.
+  Overload 2 of 2, '(values: never[], options?: { count?: "exact" | "planned" | "estimated" | undefined; defaultToNull?: boolean | undefined; } | undefined): PostgrestFilterBuilder<{ PostgrestVersion: string; }, never, never, null, "user_stats", never, "POST">', gave the following error.
+    Object literal may only specify known properties, and 'user_id' does not exist in type 'never[]'.
+lib/gamification/index.ts(344,34): error TS2339: Property 'total_sessions' does not exist on type 'never'.
+lib/gamification/index.ts(345,35): error TS2339: Property 'total_questions' does not exist on type 'never'.
+lib/gamification/index.ts(346,36): error TS2339: Property 'topics_completed' does not exist on type 'never'.
+lib/gamification/index.ts(347,30): error TS2339: Property 'study_time' does not exist on type 'never'.
+lib/gamification/index.ts(353,13): error TS2345: Argument of type '{ total_sessions: any; total_questions: any; topics_completed: any; study_time: any; updated_at: string; }' is not assignable to parameter of type 'never'.

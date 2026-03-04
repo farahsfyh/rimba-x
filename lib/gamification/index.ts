@@ -1,12 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 import type { UserProgress, UserStats, Achievement, UserAchievement } from '@/types';
 
 // Lazy-init: only created when a DB function is called (server-side).
 // Avoids crashing client imports that only use pure utility exports.
-let _supabase: ReturnType<typeof createClient> | null = null;
-function getSupabase() {
+let _supabase: any = null;
+function getSupabase(): any {
   if (!_supabase) {
-    _supabase = createClient(
+    _supabase = createClient<Database>(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
@@ -53,7 +54,7 @@ export function calculateLevelProgress(currentXP: number): number {
   const nextLevelXP = xpForNextLevel(currentLevel);
   const xpInCurrentLevel = currentXP - currentLevelXP;
   const xpNeededForLevel = nextLevelXP - currentLevelXP;
-  
+
   return (xpInCurrentLevel / xpNeededForLevel) * 100;
 }
 
@@ -71,16 +72,16 @@ export async function awardXP(
     .select('*')
     .eq('user_id', userId)
     .single();
-  
+
   if (!progress) {
     throw new Error('User progress not found');
   }
-  
+
   const oldLevel = progress.level;
   const newXP = progress.xp + xpAmount;
   const newLevel = calculateLevel(newXP);
   const leveledUp = newLevel > oldLevel;
-  
+
   // Update progress
   await getSupabase()
     .from('user_progress')
@@ -89,9 +90,9 @@ export async function awardXP(
       level: newLevel,
     })
     .eq('user_id', userId);
-  
+
   console.log(`Awarded ${xpAmount} XP to user ${userId} for: ${reason}`);
-  
+
   return { newXP, newLevel, leveledUp };
 }
 
@@ -108,20 +109,20 @@ export async function updateStreak(userId: string): Promise<{
     .select('*')
     .eq('user_id', userId)
     .single();
-  
+
   if (!progress) {
     throw new Error('User progress not found');
   }
-  
+
   const today = new Date().toDateString();
   const lastActive = new Date(progress.last_active_date).toDateString();
-  
+
   const daysDiff = getDaysDifference(lastActive, today);
-  
+
   let newStreak = progress.streak;
   let streakMaintained = false;
   let xpAwarded = 0;
-  
+
   if (daysDiff === 0) {
     // Same day, no change
     streakMaintained = true;
@@ -131,10 +132,10 @@ export async function updateStreak(userId: string): Promise<{
     newStreak = progress.streak + 1;
     streakMaintained = true;
     xpAwarded = XP_REWARDS.DAILY_STREAK;
-    
+
     // Award XP for streak
     await awardXP(userId, xpAwarded, 'Daily streak');
-    
+
     // Check for week streak bonus
     if (newStreak % 7 === 0) {
       await awardXP(userId, XP_REWARDS.WEEK_STREAK, 'Week streak bonus');
@@ -145,7 +146,7 @@ export async function updateStreak(userId: string): Promise<{
     newStreak = 1;
     streakMaintained = false;
   }
-  
+
   // Update streak and last active date
   await getSupabase()
     .from('user_progress')
@@ -154,7 +155,7 @@ export async function updateStreak(userId: string): Promise<{
       last_active_date: new Date().toISOString(),
     })
     .eq('user_id', userId);
-  
+
   return { streak: newStreak, streakMaintained, xpAwarded };
 }
 
@@ -178,27 +179,27 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
     .select('*')
     .eq('user_id', userId)
     .single();
-  
+
   const { data: stats } = await getSupabase()
     .from('user_stats')
     .select('*')
     .eq('user_id', userId)
     .single();
-  
+
   if (!progress || !stats) {
     return [];
   }
-  
+
   // Get already unlocked achievements
   const { data: unlocked } = await getSupabase()
     .from('user_achievements')
     .select('achievement_id')
     .eq('user_id', userId);
-  
-  const unlockedIds = new Set(unlocked?.map(a => a.achievement_id) || []);
-  
+
+  const unlockedIds = new Set(unlocked?.map((a: any) => a.achievement_id) || []);
+
   const newAchievements: Achievement[] = [];
-  
+
   // Define achievement criteria
   const achievementChecks = [
     {
@@ -266,7 +267,7 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
       condition: progress.level >= 10,
     },
   ];
-  
+
   // Check each achievement
   for (const achievement of achievementChecks) {
     if (achievement.condition && !unlockedIds.has(achievement.id)) {
@@ -275,10 +276,10 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
         user_id: userId,
         achievement_id: achievement.id,
       });
-      
+
       // Award XP
       await awardXP(userId, achievement.xp_reward, `Achievement: ${achievement.name}`);
-      
+
       newAchievements.push({
         id: achievement.id,
         name: achievement.name,
@@ -288,7 +289,7 @@ export async function checkAchievements(userId: string): Promise<Achievement[]> 
       });
     }
   }
-  
+
   return newAchievements;
 }
 
@@ -304,7 +305,7 @@ export async function initializeUserProgress(userId: string): Promise<void> {
     streak: 0,
     last_active_date: new Date().toISOString(),
   });
-  
+
   // Create user_stats
   await getSupabase().from('user_stats').insert({
     user_id: userId,
@@ -313,7 +314,7 @@ export async function initializeUserProgress(userId: string): Promise<void> {
     topics_completed: 0,
     study_time: 0,
   });
-  
+
   // Award first login XP
   await awardXP(userId, XP_REWARDS.FIRST_LOGIN, 'First login');
 }
@@ -335,11 +336,11 @@ export async function updateStats(
     .select('*')
     .eq('user_id', userId)
     .single();
-  
+
   if (!currentStats) {
     throw new Error('User stats not found');
   }
-  
+
   const updatedStats = {
     total_sessions: currentStats.total_sessions + (statUpdate.total_sessions || 0),
     total_questions: currentStats.total_questions + (statUpdate.total_questions || 0),
@@ -347,7 +348,7 @@ export async function updateStats(
     study_time: currentStats.study_time + (statUpdate.study_time || 0),
     updated_at: new Date().toISOString(),
   };
-  
+
   await getSupabase()
     .from('user_stats')
     .update(updatedStats)

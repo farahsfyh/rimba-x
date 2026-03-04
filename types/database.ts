@@ -12,6 +12,16 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      user_achievements: {
+        Row: { id: string; user_id: string; achievement_id: string; earned_at: string }
+        Insert: { id?: string; user_id: string; achievement_id: string; earned_at?: string }
+        Update: { id?: string; user_id?: string; achievement_id?: string; earned_at?: string }
+      }
+      document_embeddings: {
+        Row: { id: string; user_id: string; document_id: string; chunk_index: number; content: string; embedding: number[] }
+        Insert: { id?: string; user_id: string; document_id: string; chunk_index: number; content: string; embedding: number[] }
+        Update: { id?: string; user_id?: string; document_id?: string; chunk_index?: number; content?: string; embedding?: number[] }
+      }
       user_progress: {
         Row: {
           id: string
@@ -160,6 +170,9 @@ export interface Database {
       }
     }
     Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
       [_ in never]: never
     }
   }
