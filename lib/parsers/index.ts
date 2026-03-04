@@ -1,5 +1,6 @@
 import mammoth from 'mammoth';
 import * as XLSX from 'xlsx';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { ParsedDocument } from '@/types';
 
 // Polyfill browser globals required by pdf-parse/pdfjs-dist in Node.js
@@ -21,8 +22,42 @@ if (typeof globalThis.Path2D === 'undefined') {
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { PDFParse } = require('pdf-parse');
 
+// Minimum word count from pdf-parse before we consider the PDF image-heavy
+// and fall back to Gemini OCR.
+const OCR_FALLBACK_THRESHOLD = 100;
+
 /**
- * Parse PDF file
+ * Extract text from a PDF using Gemini's native multimodal understanding.
+ * This handles image-heavy, scanned, or presentation-style PDFs that have
+ * little or no text layer for pdf-parse to read.
+ */
+async function parsePDFWithGemini(buffer: Buffer): Promise<string> {
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+
+  const base64 = buffer.toString('base64');
+
+  const result = await model.generateContent([
+    {
+      inlineData: {
+        mimeType: 'application/pdf',
+        data: base64,
+      },
+    },
+    {
+      text: `Extract and transcribe ALL text content from this PDF document, including text visible inside screenshots, images, tables, and diagrams. Preserve the logical reading order and structure. Return only the extracted text — no commentary, no summaries, no additional explanation. If a section is a screenshot of code or a UI, transcribe the visible text faithfully.`,
+    },
+  ]);
+
+  return result.response.text().trim();
+}
+
+/**
+ * Parse PDF file.
+ * Strategy:
+ *   1. Use pdf-parse to extract the native text layer (fast, free).
+ *   2. If the result is sparse (< OCR_FALLBACK_THRESHOLD words), the PDF is
+ *      likely image-heavy or scanned. Fall back to Gemini multimodal OCR.
  */
 export async function parsePDF(file: File): Promise<ParsedDocument> {
   const arrayBuffer = await file.arrayBuffer();
@@ -31,8 +66,16 @@ export async function parsePDF(file: File): Promise<ParsedDocument> {
   const parser = new PDFParse({ data: buffer });
   const result = await parser.getText();
 
+  let text: string = result.text.trim();
+  const wordCount = text.split(/\s+/).filter(Boolean).length;
+
+  if (wordCount < OCR_FALLBACK_THRESHOLD) {
+    // PDF has little or no extractable text — use Gemini vision OCR
+    text = await parsePDFWithGemini(buffer);
+  }
+
   return {
-    text: result.text.trim(),
+    text,
     metadata: {
       title: file.name,
       pageCount: result.total,

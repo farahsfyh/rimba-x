@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     // Verify the document belongs to this user
     const { data: doc, error: docError } = await serviceClient
       .from('documents')
-      .select('id, filename, title, subject')
+      .select('id, filename, title, subject, parsed_text')
       .eq('id', documentId)
       .eq('user_id', user.id)
       .single()
@@ -61,11 +61,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'An internal error occurred.' }, { status: 500 })
     }
 
+    // Fall back to the raw parsed_text saved at upload time if embeddings are missing
+    let resourceText: string
     if (!chunks || chunks.length === 0) {
-      return NextResponse.json({ error: 'Document has no processed content yet. Please wait for processing to complete.' }, { status: 422 })
+      const fallback = (doc as Record<string, unknown>).parsed_text as string | null | undefined
+      if (!fallback || fallback.trim().length === 0) {
+        return NextResponse.json({ error: 'Document has no processed content yet. Please re-upload the file.' }, { status: 422 })
+      }
+      resourceText = fallback
+    } else {
+      resourceText = chunks.map(c => c.content).join('\n\n')
     }
-
-    const resourceText = chunks.map(c => c.content).join('\n\n')
     const resourceFilename = doc.filename || doc.title || 'document'
 
     const prompt = `Based on this resource content:

@@ -17,6 +17,24 @@ const ALLOWED_MIME_TYPES = new Set([
 
 export const runtime = 'nodejs'
 
+/**
+ * Strip characters that PostgreSQL rejects:
+ *  - null bytes (\u0000) — always illegal in PG text columns
+ *  - other C0/C1 control chars except tab, newline, carriage return
+ *  - lone surrogate code points that form invalid UTF-16 pairs
+ */
+function sanitizeText(text: string): string {
+  return text
+    // Remove null bytes
+    .replace(/\u0000/g, '')
+    // Remove other control characters (keep \t \n \r)
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    // Replace lone surrogates with the replacement character
+    .replace(/[\uD800-\uDFFF]/g, '\uFFFD')
+    .trim()
+}
+
 function chunkText(text: string, chunkSize = 500, overlap = 50): string[] {
   const words = text.split(/\s+/).filter(Boolean)
   const chunks: string[] = []
@@ -98,6 +116,9 @@ export async function POST(request: NextRequest) {
       parsed = await parseTXT(fileForParse)
     }
 
+    // Sanitize before any DB write — Postgres rejects null bytes and invalid escapes
+    parsed = { ...parsed, text: sanitizeText(parsed.text) }
+
     // 3. Insert document record (unprocessed)
     const { data: doc, error: docError } = await serviceClient
       .from('documents')
@@ -111,6 +132,7 @@ export async function POST(request: NextRequest) {
         subject: subject,
         language: 'en',
         processed: false,
+        parsed_text: parsed.text,
       })
       .select()
       .single()

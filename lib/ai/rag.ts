@@ -45,17 +45,38 @@ export async function storeDocumentChunks(
 }
 
 /**
- * Find relevant chunks using vector similarity search
+ * Find relevant chunks using vector similarity search.
+ * When focusDocumentIds is provided, retrieves all chunks from those specific
+ * documents (ordered by position) instead of a cross-document semantic search.
  */
 export async function findRelevantChunks(
   userId: string,
   query: string,
-  topK: number = 5
+  topK: number = 5,
+  focusDocumentIds?: string[]
 ): Promise<Array<{ content: string; similarity: number }>> {
-  // Generate embedding for the query
+  // Focused mode: return ordered chunks from the selected documents only.
+  // Gemini receives the full relevant document content rather than a semantic slice.
+  if (focusDocumentIds && focusDocumentIds.length > 0) {
+    const { data, error } = await getSupabase()
+      .from('document_embeddings')
+      .select('content, chunk_index')
+      .eq('user_id', userId)
+      .in('document_id', focusDocumentIds)
+      .order('chunk_index', { ascending: true })
+      .limit(topK * 3); // grab more since we're not filtering by similarity
+
+    if (error) {
+      console.error('Error finding focused chunks:', error);
+      throw error;
+    }
+
+    return (data || []).map(row => ({ content: row.content, similarity: 1 }));
+  }
+
+  // Default mode: cross-document vector similarity search
   const queryEmbedding = await generateEmbedding(query);
-  
-  // Use Supabase function for similarity search
+
   // threshold 0.4: broad enough to catch paraphrased questions, strict enough to exclude noise
   const { data, error } = await getSupabase().rpc('match_documents', {
     query_embedding: queryEmbedding,
@@ -63,29 +84,31 @@ export async function findRelevantChunks(
     match_count: topK,
     user_id: userId,
   });
-  
+
   if (error) {
     console.error('Error finding relevant chunks:', error);
     throw error;
   }
-  
+
   return data || [];
 }
 
 /**
- * Assemble context from relevant chunks
+ * Assemble context from relevant chunks.
+ * Pass focusDocumentIds to restrict retrieval to specific documents.
  */
 export async function assembleContext(
   userId: string,
   query: string,
-  maxChunks: number = 3
+  maxChunks: number = 3,
+  focusDocumentIds?: string[]
 ): Promise<string> {
-  const relevantChunks = await findRelevantChunks(userId, query, maxChunks);
-  
+  const relevantChunks = await findRelevantChunks(userId, query, maxChunks, focusDocumentIds);
+
   if (relevantChunks.length === 0) {
     return '';
   }
-  
+
   // Join chunks with separators
   return relevantChunks
     .map((chunk, index) => `[Source ${index + 1}]\n${chunk.content}`)

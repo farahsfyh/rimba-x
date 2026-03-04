@@ -1029,6 +1029,7 @@ export default function TutorRoomPage() {
           history,
           settings: { teachingMode: settingsRef.current.teachingMode, voiceTone: settingsRef.current.voiceTone },
           focusDocumentTitles,
+          focusDocumentIds: settingsRef.current.focusDocumentIds,
         }),
       })
       if (res.status === 401) { router.push('/login?reason=session_expired'); return }

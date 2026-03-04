@@ -72,6 +72,10 @@ export async function POST(request: NextRequest) {
     const focusDocumentTitles = rawFocusTitles
         .filter((t): t is string => typeof t === 'string' && t.length <= 200)
         .slice(0, 20)
+    const rawFocusIds: unknown[] = Array.isArray(body.focusDocumentIds) ? body.focusDocumentIds : []
+    const focusDocumentIds = rawFocusIds
+        .filter((id): id is string => typeof id === 'string' && id.length <= 100)
+        .slice(0, 20)
     const tutorSettings: TutorSettings = {
         teachingMode,
         voiceTone,
@@ -87,11 +91,17 @@ export async function POST(request: NextRequest) {
         )
     }
 
-    // Retrieve relevant context from the user's uploaded documents via RAG
+    // Retrieve relevant context from the user's uploaded documents via RAG.
+    // When specific documents are focused, restrict retrieval to those IDs only.
     let context = ''
     let ragError: string | null = null
     try {
-        context = await assembleContext(user.id, message, 6)
+        context = await assembleContext(
+            user.id,
+            message,
+            6,
+            focusDocumentIds.length > 0 ? focusDocumentIds : undefined
+        )
     } catch (e) {
         ragError = e instanceof Error ? e.message : String(e)
         console.error('[chat] RAG context retrieval failed:', ragError)
