@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
+import NextImage from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -21,6 +22,8 @@ import {
   X,
   Sparkles,
   Trophy,
+  Compass,
+  Users,
 } from 'lucide-react'
 
 interface NavItem {
@@ -32,9 +35,15 @@ interface NavItem {
 
 const mainNavItems: NavItem[] = [
   {
-    label: 'Dashboard',
+    label: 'Home',
     href: '/dashboard',
     icon: LayoutDashboard,
+  },
+  {
+    label: 'My Learning Path',
+    href: '/dashboard/learning-path',
+    icon: Compass,
+    badge: 'New',
   },
   {
     label: 'Upload Resources',
@@ -51,6 +60,11 @@ const mainNavItems: NavItem[] = [
     label: 'Notes & Exercises',
     href: '/dashboard/notes',
     icon: BookOpen,
+  },
+  {
+    label: 'Community Pods',
+    href: '/dashboard/community',
+    icon: Users,
   },
   {
     label: 'Progress',
@@ -148,18 +162,24 @@ export function Sidebar() {
     <>
       {/* Brand Header */}
       <div className={cn(
-        'flex items-center border-b border-gray-100 px-4 shrink-0',
+        'flex items-center border-b border-gray-100 pl-2 pr-3 shrink-0',
         collapsed ? 'h-16 justify-center' : 'h-16 justify-between'
       )}>
-        <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-primary/20 group-hover:shadow-primary/40 transition-shadow">
-            R
+        <Link href="/dashboard" className="flex items-center group">
+          <div
+            className="overflow-hidden flex items-center"
+            style={{ width: collapsed ? 40 : 140, height: 52 }}
+          >
+            <NextImage
+              src="/logo.png"
+              alt="Rimba-X"
+              width={collapsed ? 80 : 280}
+              height={collapsed ? 96 : 336}
+              className="w-full object-cover object-top group-hover:scale-105 transition-transform duration-200"
+              style={{ marginTop: collapsed ? '-4px' : '-4px' }}
+              priority
+            />
           </div>
-          {!collapsed && (
-            <span className="text-xl font-bold text-secondary tracking-tight">
-              Rimba<span className="text-primary">X</span>
-            </span>
-          )}
         </Link>
         {/* Desktop collapse button */}
         {!collapsed && (

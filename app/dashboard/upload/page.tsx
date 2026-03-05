@@ -70,7 +70,13 @@ export default function UploadPage() {
                     credentials: 'include',
                     body: formData,
                 })
-                const data = await res.json()
+                const rawText = await res.text()
+                let data
+                try {
+                    data = JSON.parse(rawText)
+                } catch (e) {
+                    throw new Error(`Server Error (${res.status}): ${rawText ? rawText.slice(0, 100) : 'Empty response'}`)
+                }
                 if (!res.ok) throw new Error(data.error || 'Upload failed')
                 setFiles(prev => prev.map(f => f.id === id ? { ...f, status: 'done', wordCount: data.wordCount } : f))
                 loadDocs()
@@ -165,7 +171,7 @@ export default function UploadPage() {
                 <h2 className="text-sm font-semibold text-secondary">Your Materials</h2>
                 {loadingDocs ? (
                     <div className="space-y-2">
-                        {[1,2,3].map(i => <div key={i} className="h-16 bg-gray-100 rounded-2xl animate-pulse" />)}
+                        {[1, 2, 3].map(i => <div key={i} className="h-16 bg-gray-100 rounded-2xl animate-pulse" />)}
                     </div>
                 ) : savedDocs.length === 0 ? (
                     <p className="text-sm text-muted py-4 text-center">No files uploaded yet.</p>

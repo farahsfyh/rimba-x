@@ -90,8 +90,8 @@ export default function Home() {
       {/* Navigation */}
       <nav
         className={`fixed w-full z-50 transition-all duration-300 ${scrolled
-            ? 'bg-white/90 backdrop-blur-md shadow-sm py-3'
-            : 'bg-transparent py-5'
+          ? 'bg-white/90 backdrop-blur-md shadow-sm py-3'
+          : 'bg-transparent py-5'
           }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
@@ -130,7 +130,7 @@ export default function Home() {
                 className="bg-linear-to-r from-primary to-primary-hover text-white px-5 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-primary/20 hover:shadow-primary/30 hover:-translate-y-0.5 flex items-center gap-2"
               >
                 <LayoutDashboard size={18} />
-                Dashboard
+                Home
               </Link>
             ) : (
               <Link
@@ -185,7 +185,7 @@ export default function Home() {
                 className="bg-linear-to-r from-primary to-accent text-white px-5 py-3 rounded-xl font-medium w-full flex items-center justify-center gap-2"
               >
                 <LayoutDashboard size={18} />
-                Dashboard
+                Home
               </Link>
             ) : (
               <Link
@@ -249,7 +249,7 @@ export default function Home() {
                   href="/dashboard"
                   className="bg-linear-to-r from-primary to-primary-hover text-white px-8 py-4 rounded-xl font-semibold text-lg transition-all shadow-xl shadow-primary/25 hover:shadow-primary/40 hover:-translate-y-1 flex items-center justify-center gap-2"
                 >
-                  Go to Dashboard
+                  Go to Home
                   <ArrowRight size={20} />
                 </Link>
               ) : (
@@ -595,7 +595,7 @@ export default function Home() {
                 href="/dashboard"
                 className="inline-flex bg-linear-to-r from-primary to-accent hover:from-primary-hover hover:to-accent text-white px-10 py-4 rounded-xl font-bold text-lg transition-all shadow-xl shadow-primary/20 hover:shadow-primary/40 hover:-translate-y-1 items-center justify-center gap-3"
               >
-                Open Dashboard
+                Open Home
                 <ArrowRight size={20} />
               </Link>
             ) : (

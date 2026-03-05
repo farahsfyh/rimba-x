@@ -169,8 +169,12 @@ export async function POST(request: NextRequest) {
       .update({ processed: true })
       .eq('id', doc.id)
 
+    // Clear parsed_text to prevent huge JSON payloads crashing the client response
+    const safeDoc = { ...doc, processed: true }
+    delete safeDoc.parsed_text
+
     return NextResponse.json({
-      document: { ...doc, processed: true },
+      document: safeDoc,
       chunkCount: chunks.length - embeddingErrors,
       wordCount: parsed.text.split(/\s+/).filter(Boolean).length,
     })

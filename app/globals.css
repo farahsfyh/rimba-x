@@ -32,14 +32,21 @@
 }
 
 :root {
-  --background: #f1f5f9;
+  --background: #fafaf9;
   --foreground: #0f172a;
+  --primary-start: #4F46E5;
+  --primary-end: #7C3AED;
+  --accent-warm: #F59E0B;
+  --accent-warm-light: #FB923C;
+  --accent-cool: #06B6D4;
+  --success-color: #10B981;
+  --bg-warm: #FAFAF9;
 }
 
 body {
-  background-color: #f1f5f9 !important;
-  color: #0f172a !important;
-  font-family: var(--font-inter), 'Inter', sans-serif;
+  background-color: var(--bg-warm) !important;
+  color: var(--foreground) !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   line-height: 1.6;
 }
 
@@ -106,4 +113,20 @@ h6 {
 /* Smooth transitions for sidebar */
 .sidebar-transition {
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gradient-hero {
+  background: linear-gradient(135deg, var(--primary-start) 0%, var(--primary-end) 100%);
+}
+
+.gradient-xp-bar {
+  background: linear-gradient(90deg, var(--primary-start) 0%, var(--accent-cool) 100%);
+}
+
+.glow-xp {
+  box-shadow: 0 0 20px rgba(6, 182, 212, 0.4), 0 0 40px rgba(79, 70, 229, 0.2);
+}
+
+.glow-button {
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.3), 0 2px 8px rgba(0, 0, 0, 0.1);
 }

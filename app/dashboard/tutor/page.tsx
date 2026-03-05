@@ -1256,8 +1256,8 @@ function TutorRoomContent() {
                 <p className="text-xs text-slate-400">Upload a document first, then ask me anything about it.</p>
               </motion.div>
               {/* Chips — horizontal scroll on mobile, grid on md+ */}
-              <div className="w-full max-w-lg overflow-x-auto pb-1">
-                <div className="flex gap-2 md:grid md:grid-cols-2 md:gap-3 min-w-max md:min-w-0 px-1">
+              <div className="w-full max-w-lg overflow-x-auto md:overflow-visible overflow-y-hidden pb-4 px-1">
+                <div className="flex gap-2 md:grid md:grid-cols-2 md:gap-3 min-w-max md:min-w-0">
                   {SUGGESTED_PROMPTS.map((s, i) => {
                     const Icon = s.icon
                     return (

@@ -20,7 +20,7 @@ if (typeof globalThis.Path2D === 'undefined') {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { PDFParse } = require('pdf-parse');
+const pdf = require('pdf-parse');
 
 // Minimum word count from pdf-parse before we consider the PDF image-heavy
 // and fall back to Gemini OCR.
@@ -63,14 +63,28 @@ export async function parsePDF(file: File): Promise<ParsedDocument> {
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  const parser = new PDFParse({ data: buffer });
-  const result = await parser.getText();
+  let text: string = '';
+  let pageCount = 0;
 
-  let text: string = result.text.replace(/\0/g, '').trim();
+  try {
+    // If PDF is very large, parsing it locally with pdf-parse is likely to Crash/OOM the Next.js process or block the event loop.
+    // > 4MB goes straight to Gemini.
+    if (file.size > 4 * 1024 * 1024) {
+      throw new Error(`File size (${(file.size / 1024 / 1024).toFixed(1)}MB) exceeds safe local parsing threshold. Deferring to Gemini.`);
+    }
+
+    const result = await pdf(buffer, { max: 100 }); // limit to 100 pages locally
+    text = result.text.replace(/\0/g, '').trim();
+    pageCount = result.numpages || result.total || 0;
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : 'Unknown error';
+    console.warn(`[parsePDF] Skipping local pdf-parse: ${errorMsg}`);
+  }
+
   const wordCount = text.split(/\s+/).filter(Boolean).length;
 
   if (wordCount < OCR_FALLBACK_THRESHOLD) {
-    // PDF has little or no extractable text — use Gemini vision OCR
+    // PDF has little or no extractable text, or we skipped local parsing — use Gemini vision OCR
     text = await parsePDFWithGemini(buffer);
     text = text.replace(/\0/g, '').trim();
   }
@@ -79,7 +93,7 @@ export async function parsePDF(file: File): Promise<ParsedDocument> {
     text,
     metadata: {
       title: file.name,
-      pageCount: result.total,
+      pageCount,
       format: 'PDF',
     },
   };
