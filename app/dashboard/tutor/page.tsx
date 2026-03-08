@@ -21,6 +21,14 @@ import {
   MoreVertical,
   X,
   Settings,
+  Copy,
+  Check,
+  Zap,
+  HelpCircle,
+  ListChecks,
+  MessageSquare,
+  AlignLeft,
+  Trophy,
 } from 'lucide-react'
 
 /* ─── Types ─────────────────────────────────────────────── */
@@ -254,59 +262,130 @@ function AvatarPanel({ micOn, voiceOn, isSpeaking, isThinking, isListening, live
   )
 }
 
+/* ─── Quick-Action Chips (after AI messages) ─────────────── */
+const QUICK_ACTIONS = [
+  { icon: HelpCircle,  label: 'Explain more',    prompt: 'Can you explain that in more detail?' },
+  { icon: ListChecks,  label: 'Quiz me',          prompt: 'Give me a short quiz based on what you just explained.' },
+  { icon: MessageSquare, label: 'Example',        prompt: 'Give me a concrete real-world example of that.' },
+  { icon: AlignLeft,   label: 'Summarise',        prompt: 'Summarise the key takeaways from your last response in 3 bullet points.' },
+]
+
+function QuickActionChips({ onSend, disabled }: { onSend: (prompt: string) => void; disabled: boolean }) {
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-2 ml-11">
+      {QUICK_ACTIONS.map(a => {
+        const Icon = a.icon
+        return (
+          <motion.button
+            key={a.label}
+            initial={{ opacity: 0, scale: 0.88 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.18 }}
+            onClick={() => onSend(a.prompt)}
+            disabled={disabled}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all duration-150 hover:scale-105 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              background: 'rgba(99,102,241,0.1)',
+              border: '1px solid rgba(99,102,241,0.25)',
+              color: '#a5b4fc',
+            }}
+          >
+            <Icon size={11} />
+            {a.label}
+          </motion.button>
+        )
+      })}
+    </div>
+  )
+}
+
 /* ─── Dark Chat Bubble ───────────────────────────────────── */
-function DarkChatBubble({ msg, userInitial, isStreamingThis }: {
-  msg: Message; userInitial: string; isStreamingThis: boolean
+function DarkChatBubble({ msg, userInitial, isStreamingThis, onQuickAction, isLatestAI, streamingActive }: {
+  msg: Message
+  userInitial: string
+  isStreamingThis: boolean
+  onQuickAction?: (prompt: string) => void
+  isLatestAI?: boolean
+  streamingActive?: boolean
 }) {
   const isUser = msg.role === 'user'
+  const [copied, setCopied] = React.useState(false)
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(msg.content).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className={`flex gap-3 w-full ${isUser ? 'flex-row-reverse' : ''}`}
+      className={`flex gap-3 w-full flex-col ${isUser ? 'items-end' : 'items-start'}`}
     >
-      <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold"
-        style={{
-          background: isUser ? 'linear-gradient(135deg,#FF6B6B,#ee5555)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
-          boxShadow: isUser ? '0 2px 8px rgba(255,107,107,0.4)' : '0 2px 8px rgba(99,102,241,0.4)',
-        }}>
-        {isUser ? userInitial : <Sparkles size={14} />}
-      </div>
-      <div className="max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed"
-        style={isUser
-          ? { background: 'linear-gradient(135deg,#FF6B6B,#ee5555)', color: 'white', borderRadius: '18px 4px 18px 18px', boxShadow: '0 4px 16px rgba(255,107,107,0.25)' }
-          : { background: '#252548', color: '#e2e8f0', borderRadius: '4px 18px 18px 18px', border: '1px solid rgba(139,92,246,0.25)', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }
-        }>
-        {isStreamingThis && msg.content === '' ? (
-          <div className="flex items-center gap-1 py-0.5">
-            {[0, 1, 2].map(i => (
-              <span key={i} className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce"
-                style={{ animationDelay: `${i * 150}ms` }} />
-            ))}
+      <div className={`flex gap-3 w-full ${isUser ? 'flex-row-reverse' : ''}`}>
+        <div className="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold mt-0.5"
+          style={{
+            background: isUser ? 'linear-gradient(135deg,#FF6B6B,#ee5555)' : 'linear-gradient(135deg,#6366f1,#8b5cf6)',
+            boxShadow: isUser ? '0 2px 8px rgba(255,107,107,0.4)' : '0 2px 8px rgba(99,102,241,0.4)',
+          }}>
+          {isUser ? userInitial : <Sparkles size={14} />}
+        </div>
+        <div className="group max-w-[75%] relative">
+          <div className="rounded-2xl px-4 py-3 text-sm leading-relaxed"
+            style={isUser
+              ? { background: 'linear-gradient(135deg,#FF6B6B,#ee5555)', color: 'white', borderRadius: '18px 4px 18px 18px', boxShadow: '0 4px 16px rgba(255,107,107,0.25)' }
+              : { background: '#252548', color: '#e2e8f0', borderRadius: '4px 18px 18px 18px', border: '1px solid rgba(139,92,246,0.25)', boxShadow: '0 4px 16px rgba(0,0,0,0.3)' }
+            }>
+            {isStreamingThis && msg.content === '' ? (
+              <div className="flex items-center gap-1 py-0.5">
+                {[0,1,2].map(i => (
+                  <span key={i} className="w-2 h-2 rounded-full bg-indigo-400 animate-bounce"
+                    style={{ animationDelay: `${i * 150}ms` }} />
+                ))}
+              </div>
+            ) : (
+              isUser ? (
+                <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+              ) : (
+                <div className="prose prose-invert prose-sm max-w-none
+                  [&>p]:mb-2 [&>p:last-child]:mb-0
+                  [&>ol]:mt-1 [&>ol]:mb-2 [&>ol]:pl-4 [&>ol>li]:mb-1
+                  [&>ul]:mt-1 [&>ul]:mb-2 [&>ul]:pl-4 [&>ul>li]:mb-1
+                  [&>h2]:text-sm [&>h2]:font-semibold [&>h2]:text-indigo-300 [&>h2]:mt-2 [&>h2]:mb-1
+                  [&>h3]:text-xs [&>h3]:font-semibold [&>h3]:text-slate-300 [&>h3]:mt-1.5 [&>h3]:mb-0.5
+                  [&_strong]:text-indigo-200 [&_strong]:font-semibold [&_strong]:bg-indigo-500/10 [&_strong]:px-1 [&_strong]:rounded
+                  [&_em]:text-slate-300 [&_em]:not-italic [&_em]:font-medium
+                  [&>blockquote]:border-l-2 [&>blockquote]:border-violet-500 [&>blockquote]:pl-3 [&>blockquote]:text-slate-300 [&>blockquote]:italic">
+                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                </div>
+              )
+            )}
+            {msg.timestamp && (
+              <p className={`mt-1.5 text-right text-[10px] ${isUser ? 'text-red-200' : 'text-slate-500'}`}>
+                {msg.timestamp}
+              </p>
+            )}
           </div>
-        ) : (
-          isUser ? (
-            <div className="whitespace-pre-wrap break-words">{msg.content}</div>
-          ) : (
-            <div className="prose prose-invert prose-sm max-w-none
-              [&>p]:mb-2 [&>p:last-child]:mb-0
-              [&>ol]:mt-1 [&>ol]:mb-2 [&>ol]:pl-4 [&>ol>li]:mb-1
-              [&>ul]:mt-1 [&>ul]:mb-2 [&>ul]:pl-4 [&>ul>li]:mb-1
-              [&>h2]:text-sm [&>h2]:font-semibold [&>h2]:text-indigo-300 [&>h2]:mt-2 [&>h2]:mb-1
-              [&>h3]:text-xs [&>h3]:font-semibold [&>h3]:text-slate-300 [&>h3]:mt-1.5 [&>h3]:mb-0.5
-              [&_strong]:text-white [&_strong]:font-semibold
-              [&_em]:text-slate-300 [&_em]:not-italic [&_em]:font-medium">
-              <ReactMarkdown>{msg.content}</ReactMarkdown>
-            </div>
-          )
-        )}
-        {msg.timestamp && (
-          <p className={`mt-1.5 text-right text-[10px] ${isUser ? 'text-red-200' : 'text-slate-500'}`}>
-            {msg.timestamp}
-          </p>
-        )}
+          {/* Copy button — appears on hover for AI messages */}
+          {!isUser && msg.content && !isStreamingThis && (
+            <button
+              onClick={handleCopy}
+              className="absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+              style={{ background: copied ? 'rgba(16,185,129,0.9)' : 'rgba(99,102,241,0.85)', color: 'white', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+              title={copied ? 'Copied!' : 'Copy response'}
+            >
+              {copied ? <Check size={11} /> : <Copy size={11} />}
+            </button>
+          )}
+        </div>
       </div>
+      {/* Quick-action chips on the latest completed AI message */}
+      {!isUser && isLatestAI && !isStreamingThis && !streamingActive && msg.content && onQuickAction && (
+        <QuickActionChips onSend={onQuickAction} disabled={!!streamingActive} />
+      )}
     </motion.div>
   )
 }
@@ -453,36 +532,41 @@ function TutorRoomContent() {
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [showScrollBtn, setShowScrollBtn] = useState(false)
-  const [micOn, setMicOn] = useState(false)
-  const [voiceOn, setVoiceOn] = useState(false)
-  const [activeFile, setActiveFile] = useState<string | null>(null)
-  const [showMobileAvatar, setShowMobileAvatar] = useState(false)
-  const [tabletExpanded, setTabletExpanded] = useState(false)
-  const [showMobileMenu, setShowMobileMenu] = useState(false)
-  const [isSpeaking, setIsSpeaking] = useState(false)
-  const [isListening, setIsListening] = useState(false)
-  const [isThinking, setIsThinking] = useState(false)
-  const [liveMode, setLiveMode] = useState(false)
-  const [tutorSettings, setTutorSettings] = useState<TutorSettings>(DEFAULT_SETTINGS)
-  const [documents, setDocuments] = useState<DocumentInfo[]>([])
-  const [showSettings, setShowSettings] = useState(false)
+  const [micOn, setMicOn]                 = useState(false)
+  const [voiceOn, setVoiceOn]             = useState(false)
+  const [activeFile, setActiveFile]       = useState<string | null>(null)
+  const [showMobileAvatar, setShowMobileAvatar]   = useState(false)
+  const [tabletExpanded, setTabletExpanded]       = useState(false)
+  const [showMobileMenu, setShowMobileMenu]       = useState(false)
+  const [isSpeaking, setIsSpeaking]               = useState(false)
+  const [isListening, setIsListening]             = useState(false)
+  const [isThinking, setIsThinking]               = useState(false)
+  const [liveMode, setLiveMode]                   = useState(false)
+  const [tutorSettings, setTutorSettings]         = useState<TutorSettings>(DEFAULT_SETTINGS)
+  const [documents, setDocuments]                 = useState<DocumentInfo[]>([])
+  const [showSettings, setShowSettings]           = useState(false)
+  const [sessionXp, setSessionXp]                 = useState(0)
+  const [xpToast, setXpToast]                     = useState<{ id: number; amount: number } | null>(null)
+  const [milestone, setMilestone]                 = useState<string | null>(null)
+  const xpToastCounterRef                         = useRef(0)
 
   const bottomRef = useRef<HTMLDivElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null)
-  const transcriptRef = useRef('')
-  const sendMessageRef = useRef<(text: string) => void>(() => { })
-  const voiceOnRef = useRef(voiceOn)
-  const speakQueueRef = useRef<string[]>([])
-  const isProcessingQueue = useRef(false)
-  const liveModeRef = useRef(false)
-  const isStreamingRef = useRef(false)
-  const isSpeakingRef = useRef(false)
-  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null)
-  const activeSourcesRef = useRef<AudioBufferSourceNode[]>([])
-  const scheduleEndTimeRef = useRef<number>(0)
+  const transcriptRef  = useRef('')
+  const sendMessageRef = useRef<(text: string) => void>(() => {})
+  const awardXpRef      = useRef<(n: number) => void>(() => {})
+  const voiceOnRef          = useRef(voiceOn)
+  const speakQueueRef       = useRef<string[]>([])
+  const isProcessingQueue   = useRef(false)
+  const liveModeRef         = useRef(false)
+  const isStreamingRef      = useRef(false)
+  const isSpeakingRef       = useRef(false)
+  const currentSourceRef    = useRef<AudioBufferSourceNode | null>(null)
+  const activeSourcesRef    = useRef<AudioBufferSourceNode[]>([])
+  const scheduleEndTimeRef  = useRef<number>(0)
   const lastAudioStopTimeRef = useRef<number>(0)   // ms timestamp — for echo-decay cooldown
   const startLiveListenRef = useRef<() => void>(() => { })
   const bargeInAnalyserRef = useRef<AnalyserNode | null>(null)
@@ -1072,6 +1156,9 @@ function TutorRoomContent() {
     } finally {
       setIsThinking(false)
       setIsStreaming(false)
+      // Count user messages to determine milestones (+1 because new msg already added)
+      const questionCount = messages.filter(m => m.role === 'user').length + 1
+      awardXpRef.current(questionCount)
     }
   }, [isStreaming, messages, router, enqueueSpeech])
 
@@ -1084,7 +1171,26 @@ function TutorRoomContent() {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(input) }
   }
 
-  const endSession = () => { setMessages([]); setInput('') }
+  /* Award XP and check milestones after each completed AI turn */
+  const awardXp = useCallback((questionCount: number) => {
+    const amount = 10
+    setSessionXp(prev => prev + amount)
+    xpToastCounterRef.current += 1
+    const id = xpToastCounterRef.current
+    setXpToast({ id, amount })
+    setTimeout(() => setXpToast(prev => prev?.id === id ? null : prev), 2200)
+
+    // Milestone messages
+    if (questionCount === 3) setMilestone('3 questions in! You\'re on a roll \uD83D\uDD25')
+    else if (questionCount === 5) setMilestone('5 questions asked — great focus! \u2B50')
+    else if (questionCount === 10) setMilestone('10 questions! You\'re crushing it \uD83C\uDFC6')
+    else if (questionCount === 20) setMilestone('20 questions — deep learner energy! \uD83D\uDE80')
+    else { return }
+    setTimeout(() => setMilestone(null), 3500)
+  }, [])
+  useEffect(() => { awardXpRef.current = awardXp }, [awardXp])
+
+  const endSession = () => { setMessages([]); setInput(''); setSessionXp(0) }
 
   if (loading) return null
 
@@ -1094,7 +1200,7 @@ function TutorRoomContent() {
   }
   const toggleVoice = () => {
     if (!voiceOn) {
-      unlockAudio() // unlock AudioContext on the button click (user gesture)
+      unlockAudio()
     } else {
       window.speechSynthesis?.cancel()
       audioRef.current?.pause()
@@ -1235,28 +1341,47 @@ function TutorRoomContent() {
 
         {/* Messages */}
         <div ref={scrollRef} onScroll={handleScroll}
-          className="flex-1 overflow-y-auto px-4 md:px-6 py-5 space-y-4">
+          className="flex-1 overflow-y-auto px-4 md:px-6 py-5 space-y-4 relative">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center py-6">
+            <div className="flex flex-col items-center justify-center h-full text-center py-6 relative overflow-hidden">
+              {/* Ambient orbs */}
+              <div className="absolute inset-0 pointer-events-none">
+                <motion.div animate={{ scale: [1,1.15,1], opacity: [0.07,0.13,0.07] }} transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                  className="absolute top-1/4 left-1/4 w-48 h-48 rounded-full"
+                  style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.6) 0%, transparent 70%)' }} />
+                <motion.div animate={{ scale: [1,1.1,1], opacity: [0.05,0.1,0.05] }} transition={{ duration: 8, repeat: Infinity, ease: 'easeInOut', delay: 2 }}
+                  className="absolute bottom-1/4 right-1/4 w-56 h-56 rounded-full"
+                  style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.5) 0%, transparent 70%)' }} />
+              </div>
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
+                initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="mb-6">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                  style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)', boxShadow: '0 8px 24px rgba(99,102,241,0.4)' }}>
-                  <Sparkles size={24} className="text-white" />
-                </div>
-                <h2 className="text-lg font-bold text-white mb-1">
-                  Hi {user?.user_metadata?.full_name?.split(' ')[0] || 'there'} 👋
+                transition={{ duration: 0.4, ease: 'easeOut' }}
+                className="mb-6 relative z-10">
+                <motion.div
+                  animate={{ boxShadow: ['0 8px 24px rgba(99,102,241,0.4)','0 8px 36px rgba(139,92,246,0.6)','0 8px 24px rgba(99,102,241,0.4)'] }}
+                  transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+                  className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
+                  style={{ background: 'linear-gradient(135deg,#6366f1,#8b5cf6)' }}>
+                  <Sparkles size={28} className="text-white" />
+                </motion.div>
+                <h2 className="text-xl font-bold text-white mb-2">
+                  Hey {user?.user_metadata?.full_name?.split(' ')[0] || 'there'}, ready to learn? 🚀
                 </h2>
                 <p className="text-sm text-slate-300 max-w-xs mx-auto mb-1">
-                  I only answer from your <span className="text-violet-300 font-semibold">uploaded materials</span>.
+                  I teach strictly from your{' '}
+                  <span className="text-violet-300 font-semibold">uploaded materials</span> — so everything I say is grounded in what you&apos;re studying.
                 </p>
-                <p className="text-xs text-slate-400">Upload a document first, then ask me anything about it.</p>
+                <p className="text-xs text-slate-500 mb-4">Each question you ask earns you XP. Let&apos;s go!</p>
+                {/* XP pill */}
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mx-auto"
+                  style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', color: '#a5b4fc' }}>
+                  <Zap size={11} />
+                  Session XP: {sessionXp}
+                </div>
               </motion.div>
               {/* Chips — horizontal scroll on mobile, grid on md+ */}
-              <div className="w-full max-w-lg overflow-x-auto md:overflow-visible overflow-y-hidden pb-4 px-1">
+              <div className="w-full max-w-lg overflow-x-auto md:overflow-visible overflow-y-hidden pb-4 px-1 relative z-10">
                 <div className="flex gap-2 md:grid md:grid-cols-2 md:gap-3 min-w-max md:min-w-0">
                   {SUGGESTED_PROMPTS.map((s, i) => {
                     const Icon = s.icon
@@ -1264,10 +1389,12 @@ function TutorRoomContent() {
                       <motion.button key={i}
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.25, ease: 'easeOut', delay: i * 0.06 }}
+                        transition={{ duration: 0.25, ease: 'easeOut', delay: i * 0.07 }}
                         onClick={() => sendMessage(s.prompt)}
-                        className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-medium text-left whitespace-nowrap md:whitespace-normal transition-all hover:scale-[1.02] active:scale-[0.98]"
-                        style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)', color: '#c4b5fd', minHeight: 44 }}>
+                        whileHover={{ scale: 1.03, boxShadow: '0 0 20px rgba(99,102,241,0.3)' }}
+                        whileTap={{ scale: 0.97 }}
+                        className="flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium text-left whitespace-nowrap md:whitespace-normal"
+                        style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.22)', color: '#c4b5fd', minHeight: 48 }}>
                         <Icon size={15} className="shrink-0 text-indigo-400" />
                         {s.label}
                       </motion.button>
@@ -1279,10 +1406,32 @@ function TutorRoomContent() {
           ) : (
             <>
               <AnimatePresence initial={false}>
-                {messages.map(msg => (
-                  <DarkChatBubble key={msg.id} msg={msg} userInitial={userInitial}
-                    isStreamingThis={isStreaming && msg.id === messages[messages.length - 1]?.id && msg.role === 'ai'} />
-                ))}
+                {messages.map((msg, idx) => {
+                  const isLastAICompleted = msg.role === 'ai' && idx === messages.length - 1 && !isStreaming
+                  return (
+                    <DarkChatBubble key={msg.id} msg={msg} userInitial={userInitial}
+                      isStreamingThis={isStreaming && msg.id === messages[messages.length - 1]?.id && msg.role === 'ai'}
+                      isLatestAI={isLastAICompleted}
+                      streamingActive={isStreaming}
+                      onQuickAction={(p) => sendMessage(p)}
+                    />
+                  )
+                })}
+              </AnimatePresence>
+              {/* Milestone toast — inline in message flow */}
+              <AnimatePresence>
+                {milestone && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9, y: 8 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9, y: -8 }}
+                    transition={{ duration: 0.25 }}
+                    className="flex items-center justify-center gap-2 py-2 px-4 rounded-xl mx-auto text-sm font-semibold"
+                    style={{ background: 'rgba(250,204,21,0.1)', border: '1px solid rgba(250,204,21,0.3)', color: '#fde68a', maxWidth: 320 }}>
+                    <Trophy size={14} />
+                    {milestone}
+                  </motion.div>
+                )}
               </AnimatePresence>
               <div ref={bottomRef} />
             </>
@@ -1350,6 +1499,46 @@ function TutorRoomContent() {
           </p>
         </div>
       </motion.div>
+
+      {/* ── Floating XP toast ── */}
+      <AnimatePresence>
+        {xpToast && (
+          <motion.div
+            key={xpToast.id}
+            initial={{ opacity: 0, y: 20, scale: 0.85 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -16, scale: 0.9 }}
+            transition={{ duration: 0.25, ease: 'easeOut' }}
+            className="fixed bottom-28 right-5 z-50 flex items-center gap-2 px-3.5 py-2 rounded-full text-sm font-bold pointer-events-none"
+            style={{
+              background: 'linear-gradient(135deg,rgba(99,102,241,0.9),rgba(139,92,246,0.9))',
+              color: 'white',
+              boxShadow: '0 4px 20px rgba(99,102,241,0.5)',
+            }}
+          >
+            <Zap size={13} />
+            +{xpToast.amount} XP
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Session XP counter – bottom-left, desktop only */}
+      {sessionXp > 0 && (
+        <motion.div
+          initial={{ opacity: 0, x: -12 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="hidden lg:flex fixed bottom-28 left-5 z-40 items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold pointer-events-none"
+          style={{
+            background: 'rgba(15,15,26,0.85)',
+            border: '1px solid rgba(99,102,241,0.35)',
+            color: '#a5b4fc',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <Zap size={11} />
+          {sessionXp} XP this session
+        </motion.div>
+      )}
 
       {/* Settings Modal */}
       <SettingsModal
