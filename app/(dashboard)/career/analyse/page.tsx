@@ -93,9 +93,12 @@ export default function CareerAnalysePage() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-6" suppressHydrationWarning>
           {/* Top row: score + summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col items-center justify-center gap-3">
-              <SkillMatchScore score={analysis.match_score} size={120} />
-              <p className="text-xs text-gray-400 text-center">Match to {'"'}{analysis.required_skills[0]?.category}{'"'} role</p>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 flex flex-col items-center justify-center">
+              <SkillMatchScore
+                score={analysis.match_score}
+                size={180}
+                targetRole={analysis.target_career}
+              />
             </div>
             <div className="md:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6 flex flex-col gap-3">
               <p className="text-xs font-bold text-gray-400 uppercase">AI Summary</p>
