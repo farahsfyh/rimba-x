@@ -89,6 +89,11 @@ export async function checkRateLimit(
     return { allowed: count <= options.max, remaining, resetInMs }
   }
 
+  // Skip rate limiting in local dev to avoid false positives from shared 'unknown' IP
+  if (process.env.NODE_ENV !== 'production') {
+    return { allowed: true, remaining: options.max, resetInMs: options.windowMs }
+  }
+
   // In-memory fallback
   const store = getStore(options.name)
   const now = Date.now()

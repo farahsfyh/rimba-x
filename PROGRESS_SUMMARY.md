@@ -65,7 +65,57 @@
 
 ---
 
-## 🎨 Wireframe Analysis
+## 💼 Career Readiness Expansion (March 2026)
+
+### New Database Tables (additive — no existing tables modified)
+- ✅ `career_profiles` — user career background, skills, goals
+- ✅ `skill_gap_analyses` — AI-generated gap results with match score
+- ✅ `learning_modules` — personalised skill-closing modules with resources
+- ✅ `resume_versions` — AI-generated resume JSON + ATS score
+- ✅ `user_certificates` — certificate tracking linked to modules
+- ✅ 5 new achievement seeds (career_profile_complete, first_gap_analysis, first_module_complete, resume_generated, all_critical_gaps_closed)
+
+### New lib/ Modules
+- ✅ `lib/career/prompts.ts` — Malaysia-context-aware Gemini prompt templates
+- ✅ `lib/career/parser.ts` — Safe AI JSON parser (strips fences, validates shape)
+- ✅ `lib/career/resources.ts` — Curated free resource catalogue (50 skills)
+
+### New API Routes
+- ✅ `POST /api/career/profile` — upsert career profile (Zod-validated)
+- ✅ `GET /api/career/profile` — fetch profile
+- ✅ `POST /api/career/analyse` — Gemini skill gap analysis → auto-generate modules
+- ✅ `GET /api/career/modules` — list modules with status filter
+- ✅ `PATCH /api/career/modules/[id]` — progress update + XP awards + cert insert
+- ✅ `POST /api/career/resume` — AI resume generation with ATS score
+- ✅ `GET /api/career/resume` — list resume versions
+- ✅ `POST /api/career/recommend` — top 3 career path recommendations
+
+### New Component Library (`components/career/`)
+- ✅ `CareerProfileForm.tsx` — 3-step wizard
+- ✅ `SkillTagInput.tsx` — chip-based skill input
+- ✅ `SkillGapCard.tsx` — gap skill with importance badge + resource links
+- ✅ `SkillMatchScore.tsx` — animated match score ring
+- ✅ `ModuleCard.tsx` — module card with progress bar
+- ✅ `ResumePreview.tsx` — printable resume layout
+- ✅ `ATSScoreGauge.tsx` — ATS score semi-circle gauge
+- ✅ `CareerRecommendCard.tsx` — career card with salary range + fit score
+- ✅ `CertificateBadge.tsx` — certificate tile
+
+### New Pages
+- ✅ `/career` — Career Hub with stats overview + quick actions
+- ✅ `/career/profile` — Multi-step career profile form
+- ✅ `/career/analyse` — Skill gap results + module generation CTA
+- ✅ `/career/modules` — Kanban-style module board
+- ✅ `/career/resume` — AI resume builder with PDF export
+
+### Updated Files
+- ✅ `types/index.ts` — Added CareerProfile, WorkExperience, SkillGap, LearningResource, LearningModule, ResumeVersion, ResumeContent, UserCertificate
+- ✅ `types/database.ts` — Added all 5 new table types
+- ✅ `supabase-schema.sql` — Career tables + achievement seeds appended
+- ✅ `components/dashboard/Sidebar.tsx` — Career section added
+
+---
+
 
 > Analyzed from wireframe plan — February 18, 2026
 

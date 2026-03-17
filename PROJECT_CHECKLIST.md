@@ -333,10 +333,63 @@ This checklist tracks the development progress of RimbaX AI Tutor, a free AI-pow
 
 ---
 
+---
+
+## 💼 Phase 8: Career Readiness Expansion (March 2026)
+
+### Database & Types
+- [x] Add `career_profiles` table with RLS
+- [x] Add `skill_gap_analyses` table with RLS
+- [x] Add `learning_modules` table with RLS
+- [x] Add `resume_versions` table with RLS
+- [x] Add `user_certificates` table with RLS
+- [x] Extend `types/index.ts` with all career types
+- [x] Extend `types/database.ts` with new table types
+- [x] Add career achievement seeds to DB schema
+
+### Career lib/ Modules
+- [x] `lib/career/prompts.ts` — Gemini prompt templates (skill gap, resume, recommend)
+- [x] `lib/career/parser.ts` — Safe JSON parser for AI career responses
+- [x] `lib/career/resources.ts` — Static curated free learning resource catalogue
+
+### Career API Routes
+- [x] `POST /api/career/profile` — Create/update career profile
+- [x] `GET /api/career/profile` — Fetch career profile
+- [x] `POST /api/career/analyse` — AI skill gap analysis + module generation
+- [x] `GET /api/career/modules` — List learning modules (filterable by status)
+- [x] `PATCH /api/career/modules/[id]` — Update module progress/status
+- [x] `POST /api/career/resume` — Generate AI resume
+- [x] `GET /api/career/resume` — List resume versions
+- [x] `POST /api/career/recommend` — Career path recommendations
+
+### Career Components
+- [x] `components/career/CareerProfileForm.tsx` — Multi-step profile wizard
+- [x] `components/career/SkillTagInput.tsx` — Tag-based skill input
+- [x] `components/career/SkillGapCard.tsx` — Single skill gap with resources
+- [x] `components/career/SkillMatchScore.tsx` — Match score ring
+- [x] `components/career/ModuleCard.tsx` — Learning module card
+- [x] `components/career/ResumePreview.tsx` — Styled resume render
+- [x] `components/career/ATSScoreGauge.tsx` — ATS score gauge
+- [x] `components/career/CareerRecommendCard.tsx` — Career recommendation card
+- [x] `components/career/CertificateBadge.tsx` — Certificate display tile
+
+### Career Pages
+- [x] `/career` — Career Hub landing
+- [x] `/career/profile` — Career Profile multi-step form
+- [x] `/career/analyse` — Skill Gap Analysis results
+- [x] `/career/modules` — Learning Modules list
+- [x] `/career/resume` — AI Resume Builder + PDF export
+
+### Navigation & Integration
+- [x] Add Career section to Sidebar
+- [x] Wire gamification XP to all career API events
+- [x] Add career achievement seeds
+
+---
+
 ## 🎯 Current Status
 
-**Phase:** 2 - Core Features (complete)
-**Week:** 4
-**Completed:** ~85%
+**Phase:** 8 - Career Readiness Expansion (complete)
+**Completed:** ~92%
 
-Last Updated: February 28, 2026
+Last Updated: March 18, 2026

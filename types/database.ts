@@ -150,6 +150,196 @@ export interface Database {
           topic?: string | null
         }
       }
+      career_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          full_name: string | null
+          current_level: string
+          field_of_study: string | null
+          institution: string | null
+          graduation_year: number | null
+          target_career: string
+          target_industry: string | null
+          work_experience: import('./index').WorkExperience[]
+          skills: string[]
+          certifications: string[]
+          career_goals: string | null
+          location: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          full_name?: string | null
+          current_level: string
+          field_of_study?: string | null
+          institution?: string | null
+          graduation_year?: number | null
+          target_career: string
+          target_industry?: string | null
+          work_experience?: import('./index').WorkExperience[]
+          skills?: string[]
+          certifications?: string[]
+          career_goals?: string | null
+          location?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          full_name?: string | null
+          current_level?: string
+          field_of_study?: string | null
+          institution?: string | null
+          graduation_year?: number | null
+          target_career?: string
+          target_industry?: string | null
+          work_experience?: import('./index').WorkExperience[]
+          skills?: string[]
+          certifications?: string[]
+          career_goals?: string | null
+          location?: string
+          updated_at?: string
+        }
+      }
+      skill_gap_analyses: {
+        Row: {
+          id: string
+          user_id: string
+          target_career: string
+          required_skills: import('./index').RequiredSkill[]
+          current_skills: string[]
+          gap_skills: import('./index').SkillGap[]
+          match_score: number
+          ai_summary: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          target_career: string
+          required_skills: import('./index').RequiredSkill[]
+          current_skills: string[]
+          gap_skills: import('./index').SkillGap[]
+          match_score: number
+          ai_summary: string
+          created_at?: string
+        }
+        Update: {
+          required_skills?: import('./index').RequiredSkill[]
+          current_skills?: string[]
+          gap_skills?: import('./index').SkillGap[]
+          match_score?: number
+          ai_summary?: string
+        }
+      }
+      learning_modules: {
+        Row: {
+          id: string
+          user_id: string
+          gap_analysis_id: string | null
+          title: string
+          skill_target: string
+          description: string | null
+          difficulty: string
+          estimated_hours: number
+          status: string
+          completion_pct: number
+          resources: import('./index').LearningResource[]
+          certificate_url: string | null
+          completed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          gap_analysis_id?: string | null
+          title: string
+          skill_target: string
+          description?: string | null
+          difficulty?: string
+          estimated_hours?: number
+          status?: string
+          completion_pct?: number
+          resources?: import('./index').LearningResource[]
+          certificate_url?: string | null
+          completed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          title?: string
+          skill_target?: string
+          description?: string | null
+          difficulty?: string
+          estimated_hours?: number
+          status?: string
+          completion_pct?: number
+          resources?: import('./index').LearningResource[]
+          certificate_url?: string | null
+          completed_at?: string | null
+        }
+      }
+      resume_versions: {
+        Row: {
+          id: string
+          user_id: string
+          version_name: string
+          target_role: string | null
+          content_json: import('./index').ResumeContent
+          ai_feedback: string | null
+          ats_score: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          version_name?: string
+          target_role?: string | null
+          content_json: import('./index').ResumeContent
+          ai_feedback?: string | null
+          ats_score?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          version_name?: string
+          target_role?: string | null
+          content_json?: import('./index').ResumeContent
+          ai_feedback?: string | null
+          ats_score?: number | null
+          updated_at?: string
+        }
+      }
+      user_certificates: {
+        Row: {
+          id: string
+          user_id: string
+          module_id: string | null
+          cert_name: string
+          provider: string | null
+          cert_url: string | null
+          verified: boolean
+          earned_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          module_id?: string | null
+          cert_name: string
+          provider?: string | null
+          cert_url?: string | null
+          verified?: boolean
+          earned_at?: string
+        }
+        Update: {
+          cert_name?: string
+          provider?: string | null
+          cert_url?: string | null
+          verified?: boolean
+        }
+      }
     }
     Views: {
       [_ in never]: never

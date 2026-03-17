@@ -149,6 +149,119 @@ export interface EmbeddingResponse {
 }
 
 // ================================
+// CAREER READINESS TYPES
+// ================================
+
+export interface WorkExperience {
+  company: string;
+  role: string;
+  years: number;
+  description: string;
+}
+
+export interface LearningResource {
+  title: string;
+  url: string;
+  type: 'video' | 'article' | 'course';
+  free: boolean;
+}
+
+export interface CareerProfile {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  current_level: 'student' | 'fresh_grad' | 'working';
+  field_of_study: string | null;
+  institution: string | null;
+  graduation_year: number | null;
+  target_career: string;
+  target_industry: string | null;
+  work_experience: WorkExperience[];
+  skills: string[];
+  certifications: string[];
+  career_goals: string | null;
+  location: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SkillGap {
+  skill: string;
+  importance: 'critical' | 'important' | 'nice';
+  category: string;
+  estimatedHours: number;
+  resources: LearningResource[];
+}
+
+export interface RequiredSkill {
+  skill: string;
+  importance: 'critical' | 'important' | 'nice';
+  category: string;
+}
+
+export interface SkillGapAnalysis {
+  id: string;
+  user_id: string;
+  target_career: string;
+  required_skills: RequiredSkill[];
+  current_skills: string[];
+  gap_skills: SkillGap[];
+  match_score: number;
+  ai_summary: string;
+  created_at: string;
+}
+
+export interface LearningModule {
+  id: string;
+  user_id: string;
+  gap_analysis_id: string | null;
+  title: string;
+  skill_target: string;
+  description: string | null;
+  difficulty: 'beginner' | 'intermediate' | 'advanced';
+  estimated_hours: number;
+  status: 'not_started' | 'in_progress' | 'completed';
+  completion_pct: number;
+  resources: LearningResource[];
+  certificate_url: string | null;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface ResumeContent {
+  summary: string;
+  experience: { company: string; role: string; duration: string; bullets: string[] }[];
+  education: { institution: string; degree: string; year: string }[];
+  skills: { technical: string[]; soft: string[] };
+  certifications: string[];
+  projects: { name: string; description: string; url?: string }[];
+  improvement_tips: string[];
+}
+
+export interface ResumeVersion {
+  id: string;
+  user_id: string;
+  version_name: string;
+  target_role: string | null;
+  content_json: ResumeContent;
+  ai_feedback: string | null;
+  ats_score: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserCertificate {
+  id: string;
+  user_id: string;
+  module_id: string | null;
+  cert_name: string;
+  provider: string | null;
+  cert_url: string | null;
+  verified: boolean;
+  earned_at: string;
+}
+
+// ================================
 // VOICE TYPES
 // ================================
 

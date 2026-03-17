@@ -238,3 +238,108 @@ $$;
 --   2. Add this storage policy in Storage → Policies:
 --      Allow authenticated users to upload to their own folder
 -- ============================================================
+
+-- ============================================================
+-- CAREER READINESS EXPANSION (March 2026)
+-- Run these statements in Supabase SQL Editor
+-- ============================================================
+
+-- 1. Career Profile
+CREATE TABLE IF NOT EXISTS career_profiles (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE NOT NULL,
+  full_name       TEXT,
+  current_level   TEXT NOT NULL DEFAULT 'student',
+  field_of_study  TEXT,
+  institution     TEXT,
+  graduation_year INT,
+  target_career   TEXT NOT NULL DEFAULT '',
+  target_industry TEXT,
+  work_experience JSONB NOT NULL DEFAULT '[]',
+  skills          TEXT[] NOT NULL DEFAULT '{}',
+  certifications  TEXT[] NOT NULL DEFAULT '{}',
+  career_goals    TEXT,
+  location        TEXT NOT NULL DEFAULT 'Malaysia',
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE career_profiles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own career profile"
+  ON career_profiles FOR ALL USING (auth.uid() = user_id);
+
+-- 2. Skill Gap Analyses
+CREATE TABLE IF NOT EXISTS skill_gap_analyses (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  target_career   TEXT NOT NULL,
+  required_skills JSONB NOT NULL DEFAULT '[]',
+  current_skills  TEXT[] NOT NULL DEFAULT '{}',
+  gap_skills      JSONB NOT NULL DEFAULT '[]',
+  match_score     INT NOT NULL DEFAULT 0,
+  ai_summary      TEXT NOT NULL DEFAULT '',
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE skill_gap_analyses ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own gap analyses"
+  ON skill_gap_analyses FOR ALL USING (auth.uid() = user_id);
+
+-- 3. Learning Modules
+CREATE TABLE IF NOT EXISTS learning_modules (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  gap_analysis_id UUID REFERENCES skill_gap_analyses(id) ON DELETE SET NULL,
+  title           TEXT NOT NULL,
+  skill_target    TEXT NOT NULL,
+  description     TEXT,
+  difficulty      TEXT NOT NULL DEFAULT 'beginner',
+  estimated_hours INT NOT NULL DEFAULT 0,
+  status          TEXT NOT NULL DEFAULT 'not_started',
+  completion_pct  INT NOT NULL DEFAULT 0,
+  resources       JSONB NOT NULL DEFAULT '[]',
+  certificate_url TEXT,
+  completed_at    TIMESTAMPTZ,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE learning_modules ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own modules"
+  ON learning_modules FOR ALL USING (auth.uid() = user_id);
+
+-- 4. Resume Versions
+CREATE TABLE IF NOT EXISTS resume_versions (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id         UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  version_name    TEXT NOT NULL DEFAULT 'Resume v1',
+  target_role     TEXT,
+  content_json    JSONB NOT NULL DEFAULT '{}',
+  ai_feedback     TEXT,
+  ats_score       INT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE resume_versions ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own resumes"
+  ON resume_versions FOR ALL USING (auth.uid() = user_id);
+
+-- 5. User Certificates
+CREATE TABLE IF NOT EXISTS user_certificates (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  module_id   UUID REFERENCES learning_modules(id) ON DELETE SET NULL,
+  cert_name   TEXT NOT NULL,
+  provider    TEXT,
+  cert_url    TEXT,
+  verified    BOOLEAN NOT NULL DEFAULT FALSE,
+  earned_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+ALTER TABLE user_certificates ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users manage own certificates"
+  ON user_certificates FOR ALL USING (auth.uid() = user_id);
+
+-- 6. Career Achievement Seeds
+INSERT INTO achievements (key, title, description, xp_reward, icon) VALUES
+  ('career_profile_complete', 'Career Ready',         'Completed your career profile',            50,  '💼'),
+  ('first_gap_analysis',      'Know Your Gaps',       'Ran your first skill gap analysis',        75,  '🔍'),
+  ('first_module_complete',   'Skill Unlocked',       'Completed your first learning module',    150,  '🎓'),
+  ('resume_generated',        'Resume Ready',         'Generated your first AI resume',          100,  '📄'),
+  ('all_critical_gaps_closed','Job Ready',            'Closed all critical skill gaps',          500,  '🚀')
+ON CONFLICT (key) DO NOTHING;

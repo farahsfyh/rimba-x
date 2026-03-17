@@ -24,6 +24,8 @@ import {
   Trophy,
   Compass,
   Users,
+  Briefcase,
+  BarChart2,
 } from 'lucide-react'
 
 interface NavItem {
@@ -70,6 +72,29 @@ const mainNavItems: NavItem[] = [
     label: 'Progress',
     href: '/dashboard/progress',
     icon: BarChart3,
+  },
+]
+
+const careerNavItems: NavItem[] = [
+  {
+    label: 'Career Hub',
+    href: '/career',
+    icon: Briefcase,
+  },
+  {
+    label: 'Skill Gap Analysis',
+    href: '/career/analyse',
+    icon: BarChart2,
+  },
+  {
+    label: 'Learning Modules',
+    href: '/career/modules',
+    icon: BookOpen,
+  },
+  {
+    label: 'Resume Builder',
+    href: '/career/resume',
+    icon: FileText,
   },
 ]
 
@@ -201,6 +226,15 @@ export function Sidebar() {
           </p>
         )}
         {mainNavItems.map(renderNavItem)}
+
+        {/* Career Section */}
+        <div className="my-3 border-t border-gray-100" />
+        {!collapsed && (
+          <p className="px-3 mb-2 text-[10px] font-semibold tracking-widest text-gray-400 uppercase">
+            Career
+          </p>
+        )}
+        {careerNavItems.map(renderNavItem)}
 
         {/* Divider */}
         <div className="my-3 border-t border-gray-100" />
