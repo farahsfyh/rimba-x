@@ -87,6 +87,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Failed to save analysis' }, { status: 500 })
   }
 
+  // Replace stale modules with fresh ones from this analysis
+  await supabase.from('learning_modules').delete().eq('user_id', user.id)
+
   // Auto-generate learning modules  
   const moduleDefs = deriveModulesFromGap(user.id, (analysis as any).id, gapData)
   const { data: modules } = await supabase

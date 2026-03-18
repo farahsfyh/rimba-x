@@ -90,5 +90,32 @@ export async function GET(_req: NextRequest) {
     .eq('user_id', user.id)
     .maybeSingle()
 
-  return NextResponse.json({ profile: profile ?? null })
+  // Return as { data } to match all client-side callers
+  return NextResponse.json({ data: profile ?? null })
+}
+
+export async function PATCH(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+
+  let body: unknown
+  try { body = await req.json() } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }) }
+
+  const patchSchema = z.object({
+    target_career: z.string().min(1).max(200).optional(),
+    target_industry: z.string().max(200).optional(),
+  })
+  const parsed = patchSchema.safeParse(body)
+  if (!parsed.success) return NextResponse.json({ error: 'Validation failed' }, { status: 400 })
+
+  const updatePayload = { ...parsed.data, updated_at: new Date().toISOString() }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabase.from('career_profiles') as any)
+    .update(updatePayload)
+    .eq('user_id', user.id)
+
+  if (error) return NextResponse.json({ error: 'Failed to update profile' }, { status: 500 })
+  return NextResponse.json({ success: true })
 }

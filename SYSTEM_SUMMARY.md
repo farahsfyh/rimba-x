@@ -93,6 +93,13 @@ app/
     notes/page.tsx
     tutor/page.tsx            ← Main tutor room (full feature)
     progress/page.tsx
+    career/                   Career advisor section
+      page.tsx                Career hub — stats, journey stepper, profile banner
+      profile/page.tsx        Career profile form (education, skills, goals)
+      analyse/page.tsx        Skill gap analysis runner + results viewer
+      modules/page.tsx        AI-curated learning modules (kanban + list view)
+      resume/page.tsx         AI resume generator with version management
+      recommend/page.tsx      AI career recommendations with match scoring
   dashboard/                  Duplicate routing for learning-path
     layout.tsx
     learning-path/page.tsx
@@ -110,29 +117,23 @@ app/
     tts/route.ts              POST  – text to WAV audio
     init-user/route.ts        POST  – initialise user rows
     learning-path/route.ts    POST  – adaptive learning path chat
-  auth/
-    callback/route.ts         GET   – OAuth2 callback
-
-lib/
-  utils.ts                    cn(), formatDate(), formatFileSize(), truncate()
-  ai/
-    gemini.ts                 Model init, system prompts, streaming
-    embeddings.ts             Embedding generation + cosine similarity
-    rag.ts                    Store/retrieve/assemble document chunks
-  parsers/
-    index.ts                  PDF · DOCX · XLSX · TXT parsers + chunkText()
-  supabase/
-    client.ts                 Browser Supabase client
-    server.ts                 Server Supabase client (SSR cookies)
-    queries.ts                Pre-built DB queries
-  gamification/
-    index.ts                  XP rewards, level calc, awardXP(), updateStreak()
+    career/
+      profile/route.ts        GET/POST/PATCH – career profile CRUD + target career update
+      analyse/route.ts        GET/POST – fetch/run AI skill gap analysis
+      modules/route.ts        GET – fetch learning modules (filterable by status)
+      modules/[id]/route.ts   PATCH – update module status/progress/certificate
+      resume/route.ts         POST – generate + save AI resume version
+      recommend/route.ts      POST – generate AI career recommendations
   security/
     rate-limit.ts             Redis/in-memory rate limiter
     validation.ts             Zod schemas, file validation, magic numbers
     sanitization.ts           DOMPurify XSS sanitization
   hooks/
     useUser.ts                useUser() auth hook
+  career/
+    prompts.ts                Gemini prompt templates (SKILL_GAP_PROMPT, CAREER_RECOMMEND_PROMPT, RESUME_GEN_PROMPT)
+    parser.ts                 safeParseJson, parseGapAnalysis, parseRecommendations, deriveModulesFromGap
+    resources.ts              Curated fallback resource map keyed by skill name
 
 components/
   ui/
@@ -150,6 +151,8 @@ components/
     index.ts                  Barrel export
   dashboard/
     Sidebar.tsx               Main navigation sidebar
+  career/
+    ModuleCard.tsx            Learning module card with status toggle, progress bar, and certificate URL input
 
 types/
   index.ts                    App-level TypeScript types
@@ -281,6 +284,102 @@ Idempotently creates `user_progress` (level=1, xp=0, streak=0) and `user_stats` 
 
 ---
 
+### Career API Routes
+
+All career routes require user authentication. Rate-limited under the `career` limiter.
+
+#### `GET /api/career/profile`
+Returns the authenticated user's career profile as `{ data: profile | null }`.
+
+#### `POST /api/career/profile`
+Creates or upserts a full career profile. Validated with Zod.
+
+**Request body:**
+```json
+{
+  "current_level": "Undergraduate",
+  "target_career": "Data Scientist",
+  "target_industry": "Finance",
+  "field_of_study": "Computer Science",
+  "institution": "UTM",
+  "graduation_year": 2026,
+  "skills": ["Python", "SQL"],
+  "certifications": ["AWS Cloud Practitioner"],
+  "work_experience": [{ "company": "", "role": "", "duration_months": 6, "description": "" }],
+  "career_goals": "string (max 2000)"
+}
+```
+Awards 50 XP on first creation.
+
+#### `PATCH /api/career/profile`
+Updates `target_career` and/or `target_industry` only (used by the Recommendations page "Set as Target" action).
+
+#### `GET /api/career/analyse`
+Fetches the most recent `skill_gap_analyses` row for the user as `{ data: analysis | null }`.
+
+#### `POST /api/career/analyse`
+Runs a full AI skill gap analysis against the user's career profile.
+
+**Flow:**
+1. Rate limit check (10 req / 1 hr)
+2. Fetch `career_profiles` row — 400 if missing
+3. Build prompt via `SKILL_GAP_PROMPT(profile)` → Gemini `gemini-2.0-flash`
+4. `parseGapAnalysis(rawText)` — strips Markdown fences, parses JSON
+5. Enrich `gap_skills` with curated resources via `getResourcesForSkill()` where AI returned none
+6. Insert row into `skill_gap_analyses`
+7. Delete all existing `learning_modules` for user (prevents stale accumulation)
+8. `deriveModulesFromGap()` → bulk insert new `learning_modules` rows
+9. Award 75 XP
+
+**Response:** `{ data: analysis, modules: LearningModule[] }`
+
+#### `GET /api/career/modules`
+Returns all learning modules for the user ordered by `created_at desc`. Accepts optional `?status=not_started|in_progress|completed` query param.
+
+#### `PATCH /api/career/modules/[id]`
+Updates a single module's `status`, `completion_pct`, and/or `certificate_url`. Verifies ownership. Awards 30 XP when transitioning to `completed`.
+
+#### `POST /api/career/resume`
+Generates an AI-written resume from the user's profile, completed modules, and certificates.
+
+| Detail | Value |
+|--------|-------|
+| Rate limit | 5 req / 1 hr |
+| Tones | `professional` \| `creative` \| `technical` |
+
+**Flow:** Parallel fetch of `career_profiles`, `user_certificates`, completed `learning_modules`, and existing `resume_versions` count → `RESUME_GEN_PROMPT` → Gemini → `safeParseJson` → save to `resume_versions` → award 40 XP on first resume.
+
+**Response:**
+```json
+{
+  "id": "uuid",
+  "version_name": "Data Scientist v1",
+  "content": { "summary": "", "skills": [], "experience": [], "education": [], "certifications": [] }
+}
+```
+
+#### `POST /api/career/recommend`
+Generates AI career role recommendations based on the user's profile.
+
+**Flow:** Fetch profile → `CAREER_RECOMMEND_PROMPT(profile)` → Gemini → `parseRecommendations()` → return array.
+
+**Response:**
+```json
+{
+  "recommendations": [{
+    "title": "Data Analyst",
+    "fit_score": 87,
+    "description": "...",
+    "required_skills": ["SQL", "Python"],
+    "salary_range_myr": { "min": 4000, "max": 8000 },
+    "growth_outlook": "Strong",
+    "why_good_fit": "..."
+  }]
+}
+```
+
+---
+
 ### `POST /api/learning-path`
 Adaptive learning path advisor. Conducts a diagnostic conversation (up to 7 questions: age, track, level, goal, etc.) then generates a personalised JSON roadmap.
 
@@ -331,6 +430,19 @@ All routes protected by middleware — unauthenticated users redirected to `/log
 | `/dashboard/tutor` | `tutor/page.tsx` | ✅ Full | Streaming AI chat, 3D VRM avatar, XP toasts, settings panel |
 | `/dashboard/learning-path` | `learning-path/page.tsx` | ✅ Full | Adaptive diagnostic conversation + visual roadmap |
 | `/dashboard/progress` | `progress/page.tsx` | 🔄 Placeholder | Progress dashboard (coming soon) |
+
+### Career Group `/app/(dashboard)/career/`
+
+All routes share the dashboard sidebar. Hero sections use contained `rounded-2xl mx-6 mt-6` cards with solid color backgrounds and a subtle grid pattern overlay.
+
+| Route | Color | Status | Purpose |
+|-------|-------|--------|---------|
+| `/career` | Indigo | ✅ Full | Hub: stats cards, journey stepper, profile banner with edit button |
+| `/career/profile` | Slate | ✅ Full | Zod-validated form — education, skills, work experience, career goals; upserts on save; awards 50 XP on first save |
+| `/career/analyse` | Violet | ✅ Full | Triggers AI skill gap analysis; displays match score ring, required/gap skills with resources, AI summary |
+| `/career/modules` | Teal | ✅ Full | Kanban + list view of AI-curated learning modules; filter by status; module progress/certificate tracking; Re-run Analysis link |
+| `/career/resume` | Rose | ✅ Full | Target role + tone selector; generates AI resume; renders structured sections; download/copy actions; version history |
+| `/career/recommend` | Amber | ✅ Full | AI career role recommendations with fit score, salary range (MYR), growth outlook; "Set as Target" updates profile |
 
 ---
 
@@ -478,6 +590,29 @@ Sets up `supabase.auth.onAuthStateChange()` subscription. Used in client compone
 
 ---
 
+### `lib/career/`
+
+**`prompts.ts`** — Gemini prompt builders:
+
+| Export | Description |
+|--------|-------------|
+| `SKILL_GAP_PROMPT(profile)` | Builds an analysis prompt requesting JSON with `required_skills`, `gap_skills` (with resources), `match_score`, `ai_summary` |
+| `CAREER_RECOMMEND_PROMPT(profile)` | Requests JSON array of career role recommendations with fit score, salary (MYR), and growth outlook |
+| `RESUME_GEN_PROMPT(profile, certs, modules, role, tone)` | Builds a resume generation prompt incorporating work experience, completed modules, and certificates |
+
+**`parser.ts`** — Response parsing utilities:
+
+| Export | Description |
+|--------|-------------|
+| `safeParseJson<T>(raw)` | Strips Markdown code fences then parses JSON; falls back to regex extraction |
+| `parseGapAnalysis(raw)` | Parses Gemini gap analysis response into `RawGapAnalysis` |
+| `parseRecommendations(raw)` | Parses recommendation response into `RawRecommendations` |
+| `deriveModulesFromGap(userId, analysisId, gapData)` | Converts `gap_skills` array into `learning_modules` insert rows (`not_started`, `completion_pct: 0`) |
+
+**`resources.ts`** — Curated fallback resource map: maps common skill names (e.g. `Python`, `SQL`, `Machine Learning`) to structured `{ title, url, type, free }` resource arrays. Used when Gemini returns empty resources for a skill.
+
+---
+
 ### `lib/utils.ts`
 
 | Export | Description |
@@ -515,11 +650,19 @@ All exported via `components/ui/index.ts` barrel.
 **`Sidebar.tsx`**
 - Collapsible sidebar with icon nav
 - Primary nav: Home, Learning Path (New badge), Upload, Tutor (AI badge), Notes, Community, Progress
+- Career section: Career Hub, Career Profile, Skill Gap Analysis, Learning Modules, AI Resume Builder, Career Recommendations (AI badge)
 - Secondary nav: Achievements, Settings, Help
 - Mobile drawer overlay
 - User avatar from Supabase session
 - Active route highlight
 - Sign-out button
+
+**`ModuleCard.tsx`** (`components/career/`)
+- Displays a single learning module with title, skill target, difficulty badge, estimated hours, description
+- Inline status toggle (Not Started → In Progress → Completed)
+- Progress bar with `completion_pct` input
+- Certificate URL field (unlocks on completion)
+- `PATCH /api/career/modules/[id]` on every change
 
 ---
 
@@ -573,6 +716,60 @@ xp_reward int, icon text
 ```sql
 id uuid PK, user_id uuid FK, achievement_id uuid FK,
 unlocked_at timestamptz DEFAULT now()
+```
+
+**`career_profiles`**
+```sql
+id uuid PK, user_id uuid FK(auth.users) UNIQUE,
+full_name text, current_level text, field_of_study text,
+institution text, graduation_year int,
+target_career text, target_industry text,
+skills text[], certifications text[],
+work_experience jsonb,    -- [{ company, role, duration_months, description }]
+career_goals text, location text DEFAULT 'Malaysia',
+created_at timestamptz, updated_at timestamptz
+```
+
+**`skill_gap_analyses`**
+```sql
+id uuid PK, user_id uuid FK,
+target_career text,
+required_skills jsonb,   -- [{ skill, importance, category }]
+current_skills text[],
+gap_skills jsonb,        -- [{ skill, importance, category, estimatedHours, resources[] }]
+match_score int,         -- 0–100
+ai_summary text,
+created_at timestamptz DEFAULT now()
+```
+
+**`learning_modules`**
+```sql
+id uuid PK, user_id uuid FK, gap_analysis_id uuid FK(skill_gap_analyses),
+title text, skill_target text, description text,
+difficulty text, estimated_hours int,
+status text DEFAULT 'not_started',   -- not_started | in_progress | completed
+completion_pct int DEFAULT 0,
+resources jsonb,          -- [{ title, url, type, free }]
+certificate_url text,
+completed_at timestamptz,
+created_at timestamptz DEFAULT now()
+```
+*Re-running analysis deletes all existing modules for the user and inserts fresh ones.*
+
+**`resume_versions`**
+```sql
+id uuid PK, user_id uuid FK,
+version_name text, target_role text, tone text,
+content jsonb,   -- { summary, skills, experience, education, certifications }
+created_at timestamptz DEFAULT now()
+```
+
+**`user_certificates`**
+```sql
+id uuid PK, user_id uuid FK,
+title text, issuer text, issued_date date,
+credential_url text,
+created_at timestamptz DEFAULT now()
 ```
 
 ### Vector Search Function
@@ -765,6 +962,11 @@ User action (upload / answer / session complete)
 | 3D VRM avatar (Maya) | ✅ Complete | Three.js + @pixiv/three-vrm |
 | Adaptive learning path | ✅ Complete | Diagnostic chat → JSON roadmap |
 | Rate limiting | ✅ Complete | Redis (prod) / in-memory (dev) |
+| Career profile | ✅ Complete | Zod-validated upsert, 50 XP on first save |
+| Skill gap analysis | ✅ Complete | Gemini-powered, match score, curated resources, 75 XP |
+| AI learning modules | ✅ Complete | Auto-generated from gap analysis, kanban + list view, status/progress/certificate tracking |
+| AI resume builder | ✅ Complete | Profile + certs + completed modules → structured resume, version history, 40 XP first generate |
+| Career recommendations | ✅ Complete | Fit score, salary range (MYR), growth outlook, "Set as Target" action |
 | Progress dashboard | 🔄 Placeholder | Page exists, UI not built |
 | Achievements page | 🔄 Placeholder | DB schema seeded, UI not built |
 | Community features | 🔄 Placeholder | Nav item exists, no implementation |
@@ -773,4 +975,4 @@ User action (upload / answer / session complete)
 
 ---
 
-*Last updated: March 2026*
+*Last updated: 18 March 2026*

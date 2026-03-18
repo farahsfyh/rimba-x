@@ -26,6 +26,7 @@ import {
   Users,
   Briefcase,
   BarChart2,
+  Star,
 } from 'lucide-react'
 
 interface NavItem {
@@ -95,6 +96,12 @@ const careerNavItems: NavItem[] = [
     label: 'Resume Builder',
     href: '/career/resume',
     icon: FileText,
+  },
+  {
+    label: 'Career Recommendations',
+    href: '/career/recommend',
+    icon: Star,
+    badge: 'AI',
   },
 ]
 
