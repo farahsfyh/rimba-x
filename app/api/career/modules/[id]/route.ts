@@ -47,6 +47,7 @@ export async function PATCH(
     updates.certificate_url = parsed.data.certificate_url ? sanitizeInput(parsed.data.certificate_url) : null
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const wasCompleted = (existing as any).status === 'completed'
   const nowCompleted = parsed.data.status === 'completed'
 
@@ -67,22 +68,23 @@ export async function PATCH(
 
   // XP awards on completion
   if (nowCompleted && !wasCompleted) {
-    await awardXP(user.id, 150, `Completed module: ${(module as any).skill_target}`)
+    await awardXP(user.id, 150, `Completed module: ${module.skill_target}`)
 
     if (parsed.data.certificate_url) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await supabase.from('user_certificates').insert({
+      await (supabase.from('user_certificates') as any).insert({
         user_id: user.id,
         module_id: id,
-        cert_name: `${(module as any).skill_target} Certificate`,
+        cert_name: `${module.skill_target} Certificate`,
         provider: null,
         cert_url: parsed.data.certificate_url,
         verified: false,
-      } as any)
+      })
       await awardXP(user.id, 200, 'Certificate earned')
     }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } else if (parsed.data.status === 'in_progress' && (existing as any).status === 'not_started') {
-    await awardXP(user.id, 25, `Started module: ${(module as any).skill_target}`)
+    await awardXP(user.id, 25, `Started module: ${module.skill_target}`)
   }
 
   return NextResponse.json({ module })
