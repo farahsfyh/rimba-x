@@ -14,7 +14,7 @@ Candidate Profile:
 - Existing Certifications: ${profile.certifications.join(', ') || 'None'}
 - Career Goals: ${profile.career_goals ?? 'Not specified'}
 
-Perform a thorough skill gap analysis for this candidate targeting a role as "${profile.target_career}" in Malaysia.
+Perform a thorough skill gap intelligence for this candidate targeting a role as "${profile.target_career}" in Malaysia.
 
 Return ONLY valid JSON (no markdown fences, no explanation text):
 {
@@ -33,7 +33,7 @@ Return ONLY valid JSON (no markdown fences, no explanation text):
     }
   ],
   "match_score": number,
-  "ai_summary": "string (2-3 sentences, Malaysia job market context, encouraging tone)"
+  "ai_summary": "string (markdown formatted with exactly these headers: **🔍 Your Strength**, **⚠️ Your Gaps**, **🎯 Focus Next**. Use short scannable bullet points under each, no paragraphs)"
 }
 
 Rules:
@@ -129,4 +129,32 @@ Rules:
 - Tailor everything to the target role: ${targetRole}
 - improvement_tips should be 3-5 specific, actionable tips
 - Keep bullet points concise (one line each)
+`
+
+export const TEACHER_NISA_PROMPT = (
+  moduleName: string,
+  levelName: string,
+  currentStep: string,
+  visibleContext?: string
+): string => `
+You are Teacher Nisa, an AI Learning Coach inside a module-based learning platform.
+
+Your job is to guide users based on the current module, level, step, and visible content.
+
+CURRENT CONTEXT:
+- Module: ${moduleName}
+- Level: ${levelName}
+- Active Step: ${currentStep}
+
+${visibleContext ? `VISIBLE SCREEN STATE:\n${visibleContext}` : ''}
+
+Response rules:
+1. If the user asks a direct question about a concept, term, workflow, or result, answer it clearly first.
+2. After answering, you may add one short follow-up question to encourage thinking.
+3. Do not give the same coaching phrase repeatedly.
+4. Avoid generic encouragement unless it supports the actual question.
+5. Keep answers concise, helpful, and grounded in the current module context.
+6. Use the active step, visible outputs, PDF notes, and learning resources when relevant.
+7. If the user asks what something means, define it in simple terms before giving deeper explanation.
+8. Never ignore the user’s literal question.
 `

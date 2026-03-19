@@ -24,9 +24,8 @@ import {
   Trophy,
   Compass,
   Users,
-  Briefcase,
   BarChart2,
-  Star,
+  UserCircle2,
 } from 'lucide-react'
 
 interface NavItem {
@@ -42,6 +41,29 @@ const mainNavItems: NavItem[] = [
     href: '/dashboard',
     icon: LayoutDashboard,
   },
+  {
+    label: 'Profile',
+    href: '/career/profile',
+    icon: UserCircle2,
+  },
+  {
+    label: 'Skill Gap Intelligence',
+    href: '/career/analyse',
+    icon: BarChart2,
+  },
+  {
+    label: 'Learning Modules',
+    href: '/career/modules',
+    icon: BookOpen,
+  },
+  {
+    label: 'Achievements',
+    href: '/dashboard/achievements',
+    icon: Trophy,
+  },
+]
+
+const pendingNavItems: NavItem[] = [
   {
     label: 'My Learning Path',
     href: '/dashboard/learning-path',
@@ -74,42 +96,10 @@ const mainNavItems: NavItem[] = [
     href: '/dashboard/progress',
     icon: BarChart3,
   },
-]
-
-const careerNavItems: NavItem[] = [
-  {
-    label: 'Career Hub',
-    href: '/career',
-    icon: Briefcase,
-  },
-  {
-    label: 'Skill Gap Analysis',
-    href: '/career/analyse',
-    icon: BarChart2,
-  },
-  {
-    label: 'Learning Modules',
-    href: '/career/modules',
-    icon: BookOpen,
-  },
   {
     label: 'Resume Builder',
     href: '/career/resume',
     icon: FileText,
-  },
-  {
-    label: 'Career Recommendations',
-    href: '/career/recommend',
-    icon: Star,
-    badge: 'AI',
-  },
-]
-
-const secondaryNavItems: NavItem[] = [
-  {
-    label: 'Achievements',
-    href: '/dashboard/achievements',
-    icon: Trophy,
   },
   {
     label: 'Settings',
@@ -234,24 +224,14 @@ export function Sidebar() {
         )}
         {mainNavItems.map(renderNavItem)}
 
-        {/* Career Section */}
+        {/* Pending Section */}
         <div className="my-3 border-t border-gray-100" />
         {!collapsed && (
           <p className="px-3 mb-2 text-[10px] font-semibold tracking-widest text-gray-400 uppercase">
-            Career
+            Pending
           </p>
         )}
-        {careerNavItems.map(renderNavItem)}
-
-        {/* Divider */}
-        <div className="my-3 border-t border-gray-100" />
-
-        {!collapsed && (
-          <p className="px-3 mb-2 text-[10px] font-semibold tracking-widest text-gray-400 uppercase">
-            Other
-          </p>
-        )}
-        {secondaryNavItems.map(renderNavItem)}
+        {pendingNavItems.map(renderNavItem)}
       </nav>
 
       {/* XP Progress (only when expanded) */}

@@ -82,7 +82,7 @@ export function ModuleCard({ module, onUpdate }: ModuleCardProps) {
               </span>
               {isCompleted && <CheckCircle size={12} className="text-emerald-500" />}
             </div>
-            <h3 className="font-bold text-gray-900 text-sm leading-snug">{module.title}</h3>
+            <h3 className="font-bold text-gray-900 text-sm leading-snug min-h-[40px] line-clamp-2 flex items-center">{module.title}</h3>
             <p className="text-xs text-gray-400 mt-0.5 truncate">{module.skill_target}</p>
           </div>
         </div>

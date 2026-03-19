@@ -39,14 +39,14 @@ export default function CareerProfilePage() {
         setProfile(j.data ?? null)
         if (j.data) setSaved(true)
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setLoading(false))
   }, [])
 
   return (
     <div className="min-h-screen bg-[#FAFAF9]">
       {/* Hero */}
-      <div className="relative overflow-hidden bg-slate-700 mx-6 mt-6 rounded-2xl">
+      <div className="relative overflow-hidden gradient-hero mx-6 mt-6 rounded-2xl">
         <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, white 0, white 1px, transparent 1px, transparent 28px), repeating-linear-gradient(90deg, white 0, white 1px, transparent 1px, transparent 28px)' }} />
         <div className="relative z-10 max-w-3xl mx-auto px-6 py-8 md:py-10">
           <motion.div
@@ -57,13 +57,13 @@ export default function CareerProfilePage() {
           >
             <div className="flex items-center gap-2 mb-3">
               <div className="bg-white/20 rounded-full p-2">
-                <UserCircle2 size={20} className="text-white" />
+                <UserCircle2 size={20} className="!text-white" />
               </div>
-              <span className="text-white/70 text-sm font-medium uppercase tracking-wider">Step 1 of 5</span>
+              <span className="!text-white/70 text-sm font-medium uppercase tracking-wider">Step 1 of 5</span>
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Career Profile</h1>
-            <p className="text-white/75 text-base max-w-lg">
-              Tell us about yourself — your skills, education, and goals — so we can build a personalised career plan.
+            <h1 className="text-3xl md:text-4xl font-bold !text-white mb-2">Build Your Profile</h1>
+            <p className="!text-white/75 text-base max-w-lg">
+              Provide your skills, education, and experience to help us analyze your readiness and identify gaps.
             </p>
           </motion.div>
         </div>
@@ -89,7 +89,7 @@ export default function CareerProfilePage() {
             transition={{ delay: 0.1 }}
             suppressHydrationWarning
           >
-          <CareerProfileForm
+            <CareerProfileForm
               initialData={profile ? {
                 full_name: profile.full_name,
                 current_level: profile.current_level,
@@ -127,13 +127,7 @@ export default function CareerProfilePage() {
                 <div className="flex flex-col sm:flex-row gap-2">
                   <Link href="/career/analyse" className="flex-1">
                     <button className="w-full flex items-center justify-center gap-2 bg-white border border-green-200 hover:bg-green-50 text-green-700 font-medium text-sm rounded-xl px-4 py-2.5 transition-colors">
-                      Run Skill Gap Analysis <ArrowRight size={14} />
-                    </button>
-                  </Link>
-                  <Link href="/career/recommend" className="flex-1">
-                    <button className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-medium text-sm rounded-xl px-4 py-2.5 transition-all shadow-sm shadow-amber-200">
-                      <Sparkles size={14} />
-                      Get Career Recommendations
+                      Run Skill Gap Intelligence <ArrowRight size={14} />
                     </button>
                   </Link>
                 </div>

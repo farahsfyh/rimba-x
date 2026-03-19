@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Briefcase, Target, ChevronRight, ChevronLeft, Loader2, Plus, Trash2 } from 'lucide-react'
+import { User, Briefcase, Target, ChevronRight, ChevronLeft, Loader2, Plus, Trash2, Upload, Sparkles } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
 import { SkillTagInput } from './SkillTagInput'
@@ -65,6 +65,8 @@ export function CareerProfileForm({ initialData, onSuccess }: CareerProfileFormP
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<FormState>({ ...INITIAL, ...initialData })
   const [saving, setSaving] = useState(false)
+  const [parsing, setParsing] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   function set<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm(prev => ({ ...prev, [key]: value }))
@@ -87,6 +89,65 @@ export function CareerProfileForm({ initialData, onSuccess }: CareerProfileFormP
     if (step === 0) return form.full_name.trim() && form.current_level && form.field_of_study.trim()
     if (step === 1) return form.current_skills.length > 0
     return form.target_career.trim() && form.target_industry
+  }
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file.');
+      return;
+    }
+
+    setParsing(true);
+    const id = toast.loading('Reading resume...');
+
+    try {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onloadend = async () => {
+        const base64 = reader.result?.toString().split(',')[1];
+        if (!base64) {
+             toast.error('Failed to read file.');
+             setParsing(false);
+             toast.dismiss(id);
+             return;
+        }
+
+        try {
+          const res = await fetch('/api/career/parse-resume', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file: base64, mimeType: 'application/pdf' }),
+          });
+          const json = await res.json();
+          if (!res.ok) throw new Error(json.error || 'Failed to parse file');
+
+          if (json.data) {
+             setForm(prev => ({
+               ...prev,
+               full_name: json.data.full_name || prev.full_name,
+               current_level: json.data.current_level || prev.current_level,
+               field_of_study: json.data.field_of_study || prev.field_of_study,
+               institution: json.data.institution || prev.institution,
+               current_skills: json.data.current_skills || prev.current_skills,
+               work_experience: json.data.work_experience || prev.work_experience,
+             }));
+             toast.success('Resume parsed & forms populated! ✨');
+          }
+        } catch (e: any) {
+             toast.error(e.message || 'Could not parse resume.');
+        } finally {
+             setParsing(false);
+             toast.dismiss(id);
+        }
+      };
+    } catch (e: any) {
+      toast.error('Failed to process file.');
+      setParsing(false);
+      toast.dismiss(id);
+    }
   }
 
   async function handleSubmit() {
@@ -153,9 +214,39 @@ export function CareerProfileForm({ initialData, onSuccess }: CareerProfileFormP
             {/* STEP 0 */}
             {step === 0 && (
               <>
-                <div>
-                  <h2 className="text-lg font-bold text-gray-900">Your Background</h2>
-                  <p className="text-sm text-gray-500">Tell us about your education</p>
+                <div className="border border-gray-100 bg-white rounded-2xl p-8 mb-4 flex flex-col items-center justify-center text-center relative overflow-hidden transition-all">
+                    {/* Circle Icon */}
+                    <motion.div 
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        className="w-20 h-20 rounded-full bg-violet-50/80 flex items-center justify-center mb-4 cursor-pointer hover:bg-violet-100/80 transition-colors" 
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <Upload size={32} className="text-[#8B5CF6]" />
+                    </motion.div>
+                    
+                    {/* Input */}
+                    <input type="file" ref={fileInputRef} onChange={handleFileSelect} accept=".pdf" className="hidden" />
+                    
+                    <h3 className="text-xl font-bold text-gray-900 mb-1 tracking-tight">Upload your Resume</h3>
+                    <p className="text-sm text-gray-400 max-w-xs leading-snug font-medium">Drag & drop your PDF, DOC, or DOCX file here.</p>
+                    <p className="text-sm text-gray-400 mb-6 font-medium">Max size 2MB.</p>
+
+                    <button 
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()} 
+                        disabled={parsing} 
+                        className="bg-[#8B5CF6] hover:bg-violet-600 hover:shadow-lg hover:shadow-violet-200/30 text-white font-bold text-sm px-6 py-2.5 rounded-2xl shadow-md transition-all mb-4 px-8 min-w-[140px]"
+                    >
+                         {parsing ? 'Reading...' : 'Select File'}
+                    </button>
+
+                    <p className="text-[11px] text-gray-400 font-semibold flex items-center gap-1 justify-center"><span className="opacity-70">🛡️</span> Private & Secure Analysis</p>
+                </div>
+
+                <div className="pt-2 border-t border-gray-100 mt-2 mb-3">
+                  <h2 className="text-sm font-bold text-gray-800">Or Update Manually</h2>
+                  <p className="text-[10px] text-gray-400">Add your background details step-by-step.</p>
                 </div>
                 <Input label="Full Name" value={form.full_name} onChange={e => set('full_name', e.target.value)} placeholder="e.g. Ahmad Faris" />
                 <div>

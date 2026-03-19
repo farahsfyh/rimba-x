@@ -2,8 +2,8 @@
 
 @theme {
   /* Core Brand Colors - Deep Blue Theme */
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
+  --color-primary: #8B5CF6;
+  --color-primary-hover: #7c3aed;
   --color-secondary: #0f172a;
   --color-accent: #0ea5e9;
 
@@ -34,8 +34,8 @@
 :root {
   --background: #fafaf9;
   --foreground: #0f172a;
-  --primary-start: #4F46E5;
-  --primary-end: #7C3AED;
+  --primary-start: #7C3AED;
+  --primary-end: #8B5CF6;
   --accent-warm: #F59E0B;
   --accent-warm-light: #FB923C;
   --accent-cool: #06B6D4;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
-import { BookOpen, List, LayoutGrid, Sparkles, CheckCircle, Zap, ArrowRight, RefreshCw } from 'lucide-react'
+import { BookOpen, List, LayoutGrid, Sparkles, CheckCircle, Zap, ArrowRight, RefreshCw, Clock, ChevronDown } from 'lucide-react'
 import { ModuleCard } from '@/components/career/ModuleCard'
 import { Button } from '@/components/ui/Button'
 import type { LearningModule } from '@/types'
@@ -51,22 +51,22 @@ export default function CareerModulesPage() {
   return (
     <div className="min-h-screen bg-[#FAFAF9]">
       {/* HERO */}
-      <div className="relative overflow-hidden bg-teal-600 mx-6 mt-6 rounded-2xl px-6 py-8">
+      <div className="relative overflow-hidden gradient-hero mx-6 mt-6 rounded-2xl px-6 py-8">
         <div className="absolute inset-0 opacity-[0.06]" style={{ backgroundImage: 'repeating-linear-gradient(0deg, white 0, white 1px, transparent 1px, transparent 28px), repeating-linear-gradient(90deg, white 0, white 1px, transparent 1px, transparent 28px)' }} />
         <motion.div initial="hidden" animate="visible" variants={stagger} className="relative z-10">
           <motion.div variants={fadeUp} suppressHydrationWarning className="flex items-center gap-2 mb-3">
             <div className="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
-              <BookOpen size={18} className="text-white" />
+              <BookOpen size={18} className="!text-white" />
             </div>
-            <span className="text-white/80 text-sm font-semibold">Learning Modules</span>
-            <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold bg-white/20 text-white px-2 py-0.5 rounded-full">
+            <span className="!text-white/80 text-sm font-semibold">Learning Modules</span>
+            <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold bg-white/20 !text-white px-2 py-0.5 rounded-full">
               <Sparkles size={9} /> AI-Curated
             </span>
           </motion.div>
-          <motion.h1 variants={fadeUp} suppressHydrationWarning className="text-3xl md:text-4xl font-extrabold text-white mb-2">
+          <motion.h1 variants={fadeUp} suppressHydrationWarning className="text-3xl md:text-4xl font-extrabold !text-white mb-2">
             Your Learning Path
           </motion.h1>
-          <motion.p variants={fadeUp} suppressHydrationWarning className="text-teal-100 text-sm mb-5">
+          <motion.p variants={fadeUp} suppressHydrationWarning className="text-white/80 text-sm mb-5">
             Skill-targeted resources personalised from your gap analysis
           </motion.p>
 
@@ -79,8 +79,8 @@ export default function CareerModulesPage() {
             >
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-white/80 text-xs font-semibold">Completion</span>
-                  <span className="text-white font-extrabold">{completedPct}%</span>
+                  <span className="!text-white/80 text-xs font-semibold">Completion</span>
+                  <span className="!text-white font-extrabold">{completedPct}%</span>
                 </div>
                 <div className="h-2 bg-white/20 rounded-full overflow-hidden">
                   <motion.div
@@ -92,7 +92,7 @@ export default function CareerModulesPage() {
                   />
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-white bg-white/20 rounded-xl px-3 py-2">
+              <div className="flex items-center gap-1 !text-white bg-white/20 rounded-xl px-3 py-2">
                 <CheckCircle size={14} />
                 <span className="text-sm font-extrabold">{byStatus('completed').length}/{modules.length}</span>
               </div>
@@ -114,7 +114,7 @@ export default function CareerModulesPage() {
             <button
               onClick={() => setFilter('all')}
               className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all
-                ${filter === 'all' ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-transparent shadow-sm' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-emerald-300'}`}
+                ${filter === 'all' ? 'gradient-hero !text-white border-transparent shadow-sm' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-[#8B5CF6]'}`}
             >
               All ({modules.length})
             </button>
@@ -123,7 +123,7 @@ export default function CareerModulesPage() {
                 key={s.key}
                 onClick={() => setFilter(s.key)}
                 className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1.5
-                  ${filter === s.key ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white border-transparent shadow-sm' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-emerald-300'}`}
+                  ${filter === s.key ? 'gradient-hero !text-white border-transparent shadow-sm' : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-[#8B5CF6]'}`}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${filter === s.key ? 'bg-white' : s.dot}`} />
                 {s.label} ({byStatus(s.key).length})
@@ -133,7 +133,7 @@ export default function CareerModulesPage() {
           <div className="flex items-center gap-2">
             <Link
               href="/career/analyse"
-              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100 transition-all"
+              className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border border-violet-200 bg-violet-50 text-[#8B5CF6] hover:bg-violet-100 transition-all"
             >
               <RefreshCw size={11} />
               Re-run Analysis
@@ -141,13 +141,13 @@ export default function CareerModulesPage() {
             <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">
             <button
               onClick={() => setView('kanban')}
-              className={`p-2 rounded-lg transition-all ${view === 'kanban' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`p-2 rounded-lg transition-all ${view === 'kanban' ? 'bg-white shadow-sm text-[#8B5CF6]' : 'text-gray-400 hover:text-gray-600'}`}
             >
               <LayoutGrid size={14} />
             </button>
             <button
               onClick={() => setView('list')}
-              className={`p-2 rounded-lg transition-all ${view === 'list' ? 'bg-white shadow-sm text-emerald-600' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`p-2 rounded-lg transition-all ${view === 'list' ? 'bg-white shadow-sm text-[#8B5CF6]' : 'text-gray-400 hover:text-gray-600'}`}
             >
               <List size={14} />
             </button>
@@ -195,10 +195,56 @@ export default function CareerModulesPage() {
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <span className={`w-2 h-2 rounded-full ${col.dot}`} />
                   <span className={`text-xs font-extrabold uppercase tracking-wider ${col.color}`}>{col.label}</span>
-                  <span className="text-xs text-gray-300 ml-1">({byStatus(col.key).length})</span>
+                  <span className="text-xs text-gray-300 ml-1">({col.key === 'in_progress' ? 1 : byStatus(col.key).length})</span>
                 </div>
                 <div className="flex flex-col gap-3">
-                  {byStatus(col.key).length === 0 ? (
+                  {col.key === 'in_progress' ? (
+                    <motion.div
+                      variants={fadeUp}
+                      suppressHydrationWarning
+                      className="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden"
+                    >
+                      <div className="h-1 w-full bg-gradient-to-r from-blue-500 to-indigo-500" />
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 bg-amber-100 text-amber-700 w-fit mb-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                              Intermediate
+                            </span>
+                            <h3 className="font-bold text-gray-900 text-sm leading-snug line-clamp-2 min-h-[40px] flex items-center">Computer Vision: Intelligent Detection Systems</h3>
+                            <p className="text-xs text-gray-500 font-medium mt-0.5 truncate">Level 1 — Understand</p>
+                          </div>
+                        </div>
+
+                        <div className="mb-3">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-600">In Progress</span>
+                            <span className="text-[11px] font-bold text-gray-700">20%</span>
+                          </div>
+                          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-500" style={{ width: '20%' }} />
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 text-xs text-gray-400 mb-3">
+                          <span className="flex items-center gap-1"><Clock size={10} />12h</span>
+                          <span className="flex items-center gap-1"><BookOpen size={10} />3 resources</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Link href="/career/modules/computer-vision-detection-system" className="flex-1">
+                            <button className="w-full flex-1 flex items-center justify-center gap-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-md shadow-blue-500/20 !text-white text-xs font-bold py-2 rounded-xl transition-all">
+                              Continue Module <ArrowRight size={12} />
+                            </button>
+                          </Link>
+                          <button disabled className="flex items-center gap-1 text-xs text-gray-400 px-2.5 py-2 rounded-xl opacity-30 cursor-not-allowed">
+                            <ChevronDown size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ) : byStatus(col.key).length === 0 ? (
                     <div className="bg-white/60 rounded-2xl border border-dashed border-gray-200 p-5 text-center text-xs text-gray-300">
                       Empty
                     </div>

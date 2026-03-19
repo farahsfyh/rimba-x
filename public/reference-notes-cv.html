@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Computer Vision Study Notes</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Georgia, 'Times New Roman', serif; background: #f5f4f0; color: #1a1a1a; }
+
+  .page { background: #fff; max-width: 760px; margin: 0 auto; padding: 0; }
+
+  /* COVER */
+  .cover { background: #1a1a2e; color: #fff; padding: 72px 64px; min-height: 300px; position: relative; overflow: hidden; }
+  .cover::before { content: ''; position: absolute; top: -60px; right: -60px; width: 300px; height: 300px; border-radius: 50%; background: rgba(127,119,221,0.15); }
+  .cover::after { content: ''; position: absolute; bottom: -40px; left: 40px; width: 200px; height: 200px; border-radius: 50%; background: rgba(29,158,117,0.1); }
+  .cover-tag { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: rgba(255,255,255,0.5); margin-bottom: 20px; }
+  .cover h1 { font-size: 34px; font-weight: normal; line-height: 1.25; margin-bottom: 12px; }
+  .cover h1 span { color: #9FE1CB; }
+  .cover-sub { font-size: 15px; color: rgba(255,255,255,0.6); margin-bottom: 40px; }
+  .cover-meta { display: flex; gap: 28px; }
+  .cover-meta div { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12px; color: rgba(255,255,255,0.45); }
+  .cover-meta strong { display: block; font-size: 13px; color: rgba(255,255,255,0.85); margin-bottom: 2px; }
+
+  /* BODY */
+  .content { padding: 56px 64px; }
+
+  /* SECTIONS */
+  .section { margin-bottom: 52px; }
+  .section-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1.5px solid #1a1a2e; }
+  .section-num { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 10px; letter-spacing: 0.12em; color: #888; text-transform: uppercase; }
+  .section-title { font-size: 20px; font-weight: normal; }
+
+  /* LEVEL BADGE */
+  .level-badge { display: inline-block; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; padding: 3px 10px; border-radius: 3px; margin-bottom: 10px; }
+  .badge-green { background: #E1F5EE; color: #085041; }
+  .badge-blue { background: #E6F1FB; color: #0C447C; }
+  .badge-amber { background: #FAEEDA; color: #633806; }
+
+  p { font-size: 14px; line-height: 1.8; color: #333; margin-bottom: 14px; }
+  h3 { font-size: 15px; font-weight: normal; margin-bottom: 10px; font-family: 'Helvetica Neue', Arial, sans-serif; }
+
+  /* CONCEPT CARDS */
+  .concept-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+  .concept-card { background: #fafaf8; border: 1px solid #e8e6e0; border-radius: 6px; padding: 14px 16px; }
+  .concept-card .label { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #888; margin-bottom: 5px; }
+  .concept-card .title { font-size: 13px; font-weight: bold; margin-bottom: 5px; font-family: 'Helvetica Neue', Arial, sans-serif; }
+  .concept-card .desc { font-size: 13px; line-height: 1.6; color: #444; }
+
+  /* PIPELINE */
+  .pipeline { display: flex; align-items: stretch; gap: 0; margin: 20px 0; }
+  .pipe-step { flex: 1; background: #f0eefc; border: 1px solid #c5c0f0; padding: 10px 8px; text-align: center; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; color: #3C3489; line-height: 1.4; position: relative; }
+  .pipe-step:not(:last-child)::after { content: '›'; position: absolute; right: -9px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #7F77DD; z-index: 2; background: #fff; }
+  .pipe-step:first-child { border-radius: 4px 0 0 4px; }
+  .pipe-step:last-child { border-radius: 0 4px 4px 0; }
+
+  /* METRICS TABLE */
+  table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13px; }
+  th { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #888; text-align: left; padding: 8px 12px; border-bottom: 1.5px solid #e0ddd5; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f0ede6; line-height: 1.5; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { font-weight: bold; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12px; color: #1a1a2e; }
+
+  /* STEPS */
+  .steps { list-style: none; margin: 14px 0; }
+  .steps li { display: flex; gap: 14px; margin-bottom: 14px; }
+  .step-num { width: 24px; height: 24px; min-width: 24px; border-radius: 50%; background: #1a1a2e; color: #fff; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .step-body .step-title { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; font-weight: bold; margin-bottom: 3px; }
+  .step-body .step-desc { font-size: 13px; line-height: 1.65; color: #444; }
+
+  /* CALLOUT */
+  .callout { border-left: 3px solid; padding: 14px 18px; border-radius: 0 6px 6px 0; margin: 18px 0; }
+  .callout-blue { border-color: #378ADD; background: #f0f6fd; }
+  .callout-green { border-color: #1D9E75; background: #f0fbf6; }
+  .callout-amber { border-color: #EF9F27; background: #fef8ee; }
+  .callout-red { border-color: #E24B4A; background: #fef2f2; }
+  .callout p { font-size: 13px; margin: 0; line-height: 1.7; }
+  .callout-label { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 5px; }
+  .callout-blue .callout-label { color: #185FA5; }
+  .callout-green .callout-label { color: #0F6E56; }
+  .callout-amber .callout-label { color: #854F0B; }
+  .callout-red .callout-label { color: #993C1D; }
+
+  /* QUIZ SECTION */
+  .quiz-item { background: #fafaf8; border: 1px solid #e8e6e0; border-radius: 6px; padding: 14px 16px; margin-bottom: 10px; }
+  .quiz-q { font-size: 13px; font-weight: bold; font-family: 'Helvetica Neue', Arial, sans-serif; margin-bottom: 8px; }
+  .quiz-options { list-style: none; }
+  .quiz-options li { font-size: 13px; color: #444; padding: 3px 0; display: flex; gap: 8px; }
+  .quiz-options li.correct { color: #0F6E56; font-weight: bold; }
+  .quiz-options li::before { content: attr(data-opt); font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; color: #aaa; min-width: 16px; }
+  .quiz-options li.correct::before { color: #0F6E56; }
+  .answer-note { font-size: 11px; color: #888; font-style: italic; margin-top: 6px; }
+
+  /* OUTPUT STRUCTURE */
+  .output-row { display: grid; grid-template-columns: 110px 1fr; gap: 20px; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #f0ede6; }
+  .output-row:last-child { border-bottom: none; }
+  .output-level { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12px; font-weight: bold; }
+  .output-sublabel { font-size: 11px; color: #888; }
+  .pills { display: flex; flex-wrap: wrap; gap: 5px; margin: 6px 0; }
+  .pill { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 10px; padding: 3px 9px; border-radius: 10px; background: #f0eefc; color: #3C3489; border: 1px solid #c5c0f0; }
+
+  /* KEY TERMS */
+  .term-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .term { border-left: 2px solid #e8e6e0; padding: 6px 12px; }
+  .term-word { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 12px; font-weight: bold; margin-bottom: 2px; }
+  .term-def { font-size: 12px; color: #555; line-height: 1.55; }
+
+  /* DIVIDER */
+  .divider { border: none; border-top: 1px solid #e8e6e0; margin: 32px 0; }
+
+  /* PRINT */
+  @media print {
+    body { background: #fff; }
+    .page { box-shadow: none; }
+    .section { page-break-inside: avoid; }
+  }
+
+  /* FOOTER */
+  .footer { background: #fafaf8; border-top: 1px solid #e8e6e0; padding: 20px 64px; display: flex; justify-content: space-between; align-items: center; }
+  .footer span { font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 11px; color: #aaa; }
+
+  .print-btn { position: fixed; bottom: 24px; right: 24px; background: #1a1a2e; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-family: 'Helvetica Neue', Arial, sans-serif; font-size: 13px; cursor: pointer; z-index: 100; }
+  .print-btn:hover { background: #2d2d4e; }
+  @media print { .print-btn { display: none; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- COVER -->
+  <div class="cover">
+    <div class="cover-tag">Study Reference Notes · Computer Vision Module</div>
+    <h1>Computer Vision:<br><span>Intelligent Detection</span><br>Systems</h1>
+    <p class="cover-sub">Everything you need to understand, apply, and prove your skills</p>
+    <div class="cover-meta">
+      <div><strong>Levels</strong>Understand · Apply · Prove</div>
+      <div><strong>Topic</strong>Glaucoma Detection</div>
+      <div><strong>Format</strong>Study Notes + Quiz Prep</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- SECTION 1: WHAT IS COMPUTER VISION -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <span class="section-title">What is Computer Vision?</span>
+      </div>
+
+      <p>Computer vision is a field of artificial intelligence that enables machines to interpret and understand visual information from the world — such as images and video. Rather than humans manually analysing images, models learn patterns from large datasets to make predictions automatically.</p>
+
+      <p>There are two core tasks you must understand:</p>
+
+      <div class="concept-grid">
+        <div class="concept-card">
+          <div class="label">Task 1</div>
+          <div class="title">Classification</div>
+          <div class="desc">Assigns a label to the entire image. Example: "This image is <em>glaucoma</em>" or "This image is <em>normal</em>."</div>
+        </div>
+        <div class="concept-card">
+          <div class="label">Task 2</div>
+          <div class="title">Detection</div>
+          <div class="desc">Locates <em>where</em> something is in the image using a bounding box, then classifies it. More specific than classification.</div>
+        </div>
+      </div>
+
+      <div class="callout callout-blue">
+        <div class="callout-label">Key distinction</div>
+        <p><strong>Classification answers: "What is in this image?"</strong><br>
+        <strong>Detection answers: "What is in this image, and where is it?"</strong><br>
+        For medical imaging tasks like glaucoma screening, classification is often sufficient — you need to know <em>if</em> glaucoma is present, not pinpoint a bounding box.</p>
+      </div>
+    </div>
+
+    <!-- SECTION 2: THE DETECTION PIPELINE -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <span class="section-title">The Detection Pipeline</span>
+      </div>
+
+      <p>Every detection system follows the same fundamental sequence. You must be able to describe each stage and explain what happens between them.</p>
+
+      <div class="pipeline">
+        <div class="pipe-step">Input<br>Image</div>
+        <div class="pipe-step">Pre-<br>processing</div>
+        <div class="pipe-step">Feature<br>Extraction</div>
+        <div class="pipe-step">Model<br>Inference</div>
+        <div class="pipe-step">Output /<br>Prediction</div>
+      </div>
+
+      <ol class="steps">
+        <li>
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Input image</div>
+            <div class="step-desc">A raw image file (e.g. a fundus photograph of the eye) is loaded into the system. It may be in JPEG, PNG, or DICOM format.</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Preprocessing</div>
+            <div class="step-desc">The image is prepared for the model. This includes resizing to a fixed dimension (e.g. 224×224 px), normalising pixel values (typically to 0–1), and sometimes applying augmentations like flipping or contrast adjustment.</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Feature extraction</div>
+            <div class="step-desc">The model learns to detect patterns — edges, textures, shapes, and spatial relationships — from labelled training data. In deep learning, convolutional layers do this automatically.</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Model inference</div>
+            <div class="step-desc">The trained model processes the image and produces a raw output (logits or probabilities). This is the prediction step — the model is not learning here, only applying what it learned.</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <div class="step-title">Output / prediction</div>
+            <div class="step-desc">The final result: a class label (glaucoma / normal), a confidence score (e.g. 0.87), and optionally a bounding box or heatmap showing where the model focused.</div>
+          </div>
+        </li>
+      </ol>
+    </div>
+
+    <!-- SECTION 3: KEY FEATURES MODELS LEARN -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">03</span>
+        <span class="section-title">What Models Learn From Images</span>
+      </div>
+
+      <p>Models do not "see" images the way humans do. They process pixel values and learn to associate patterns with labels during training. The features below are what a well-trained model learns to detect:</p>
+
+      <table>
+        <tr><th>Feature type</th><th>Description</th><th>Glaucoma example</th></tr>
+        <tr><td>Edges</td><td>Sharp transitions between pixel intensities</td><td>Boundary of the optic disc</td></tr>
+        <tr><td>Textures</td><td>Repeated local patterns across a region</td><td>Nerve fibre layer texture</td></tr>
+        <tr><td>Shapes</td><td>Geometric structures in the image</td><td>Cup-to-disc ratio (CDR)</td></tr>
+        <tr><td>Spatial context</td><td>Relationship between regions</td><td>Cup size relative to total disc</td></tr>
+        <tr><td>Colour / intensity</td><td>Brightness and hue in specific areas</td><td>Pallor of the optic cup</td></tr>
+      </table>
+
+      <div class="callout callout-green">
+        <div class="callout-label">Clinical context</div>
+        <p>In glaucoma detection, the most important feature is the <strong>cup-to-disc ratio (CDR)</strong>. A CDR above 0.6 is typically considered suspicious. The model learns to estimate this ratio from the image automatically.</p>
+      </div>
+    </div>
+
+    <!-- SECTION 4: MODEL OUTPUTS -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">04</span>
+        <span class="section-title">Understanding Model Outputs</span>
+      </div>
+
+      <p>When you run a model, it returns structured outputs. You need to know how to read and interpret these correctly — this is tested in Level 2 and Level 3.</p>
+
+      <div class="concept-grid">
+        <div class="concept-card">
+          <div class="label">Output type 1</div>
+          <div class="title">Class label</div>
+          <div class="desc">A categorical prediction: <em>Glaucoma</em> or <em>Normal</em>. Derived by applying a threshold (usually 0.5) to the confidence score.</div>
+        </div>
+        <div class="concept-card">
+          <div class="label">Output type 2</div>
+          <div class="title">Confidence score</div>
+          <div class="desc">A probability between 0 and 1. Example: 0.87 means the model is 87% confident the image shows glaucoma.</div>
+        </div>
+        <div class="concept-card">
+          <div class="label">Output type 3</div>
+          <div class="title">Bounding box</div>
+          <div class="desc">Co-ordinates (x, y, width, height) defining where the model found the relevant region. Used in object detection tasks.</div>
+        </div>
+        <div class="concept-card">
+          <div class="label">Output type 4</div>
+          <div class="title">Heatmap / CAM</div>
+          <div class="desc">A visual overlay showing which regions most influenced the prediction. Useful for interpretability and clinical trust.</div>
+        </div>
+      </div>
+
+      <div class="callout callout-amber">
+        <div class="callout-label">Important — threshold effect</div>
+        <p>If a model outputs 0.51, it predicts <em>glaucoma</em> (above 0.5 threshold). If it outputs 0.49, it predicts <em>normal</em>. These two predictions are very close in confidence but result in different labels. In medical contexts, clinicians often lower the threshold (e.g. to 0.3) to catch more true positives — even at the cost of more false positives.</p>
+      </div>
+    </div>
+
+    <!-- SECTION 5: EVALUATION METRICS -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <span class="section-title">Evaluation Metrics</span>
+      </div>
+
+      <p>Knowing how to evaluate a model is just as important as running one. You will be tested on your ability to choose the right metric for the right situation.</p>
+
+      <p>Start with the confusion matrix — every metric below is derived from it:</p>
+
+      <table>
+        <tr><th></th><th>Predicted: Positive</th><th>Predicted: Negative</th></tr>
+        <tr><td>Actual: Positive</td><td>True Positive (TP)</td><td>False Negative (FN)</td></tr>
+        <tr><td>Actual: Negative</td><td>False Positive (FP)</td><td>True Negative (TN)</td></tr>
+      </table>
+
+      <table>
+        <tr><th>Metric</th><th>Formula</th><th>What it tells you</th><th>When to prioritise</th></tr>
+        <tr><td>Accuracy</td><td>TP+TN / Total</td><td>Overall correctness</td><td>Balanced datasets</td></tr>
+        <tr><td>Precision</td><td>TP / (TP+FP)</td><td>How many positive predictions were correct</td><td>When false alarms are costly</td></tr>
+        <tr><td>Recall (Sensitivity)</td><td>TP / (TP+FN)</td><td>How many actual positives were caught</td><td>When missing cases is dangerous</td></tr>
+        <tr><td>F1 Score</td><td>2 × (P×R)/(P+R)</td><td>Balance of precision and recall</td><td>Imbalanced datasets</td></tr>
+        <tr><td>AUC-ROC</td><td>Area under ROC curve</td><td>Model's ability to separate classes</td><td>Comparing models overall</td></tr>
+        <tr><td>Specificity</td><td>TN / (TN+FP)</td><td>How well negatives are identified</td><td>Screening contexts</td></tr>
+      </table>
+
+      <div class="callout callout-red">
+        <div class="callout-label">Critical for glaucoma detection</div>
+        <p><strong>Prioritise Recall (Sensitivity) above all other metrics.</strong> In medical screening, a false negative — telling a patient they are normal when they have glaucoma — causes irreversible harm. A false positive only leads to an unnecessary follow-up. The cost of missing a case is always higher than the cost of over-referring.</p>
+      </div>
+    </div>
+
+    <!-- SECTION 6: LEVEL 2 GUIDED PRACTICE -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">06</span>
+        <span class="section-title">Level 2 — Applying the Workflow</span>
+      </div>
+
+      <div class="level-badge badge-blue">Level 2 · Apply</div>
+
+      <p>In Level 2, you will follow a guided 5-step workflow. Use this section to understand what each step requires and why it matters — so you can reason about your choices, not just click through.</p>
+
+      <ol class="steps">
+        <li>
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Dataset familiarisation</div>
+            <div class="step-desc">Look at sample fundus images. Before running any model, you must visually understand the data. Ask: Are images consistent in quality? Any obvious differences between glaucoma and normal cases? What do the optic discs look like?</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Preprocessing</div>
+            <div class="step-desc">Load the image, resize to the required input shape (e.g. 224×224), and normalise pixel values. Without proper preprocessing, the model may produce unreliable outputs. Normalisation (dividing by 255) ensures consistent input scale.</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Run the model</div>
+            <div class="step-desc">Pass the preprocessed image to the pre-built model. Record the raw output: class label and confidence score. Do not modify the model — your task is to use it correctly and interpret its output.</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Interpret the prediction</div>
+            <div class="step-desc">This is the most important step. Given the prediction: Is the confidence score high or low? Does the prediction seem clinically reasonable? If the model says 0.53 (glaucoma), that is a low-confidence prediction — flag it as uncertain. Explain your reasoning.</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <div class="step-title">Basic evaluation</div>
+            <div class="step-desc">Given a small set of results with ground truth labels, calculate accuracy manually. Identify which cases were incorrect and suggest why (e.g. low image quality, borderline CDR, unusual presentation).</div>
+          </div>
+        </li>
+      </ol>
+
+      <div class="callout callout-blue">
+        <div class="callout-label">Examiner tip</div>
+        <p>Level 2 rewards reasoning. You will not be penalised for a wrong prediction from the model. You <em>will</em> be evaluated on whether you correctly interpret what the output means and whether your explanation is clinically logical.</p>
+      </div>
+    </div>
+
+    <!-- SECTION 7: LEVEL 3 CHALLENGE -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">07</span>
+        <span class="section-title">Level 3 — Independent Challenge</span>
+      </div>
+
+      <div class="level-badge badge-amber">Level 3 · Prove</div>
+
+      <div class="callout callout-amber">
+        <div class="callout-label">Problem statement</div>
+        <p>You are tasked with developing a detection workflow to identify signs of glaucoma from retinal fundus images. You will be given a dataset of labelled images. Your objective is to independently apply a detection pipeline to classify each image as glaucoma or normal. No step-by-step guidance will be provided.</p>
+      </div>
+
+      <p>Use this checklist to ensure your submission is complete:</p>
+
+      <ol class="steps">
+        <li>
+          <div class="step-num">✓</div>
+          <div class="step-body">
+            <div class="step-title">Data handling</div>
+            <div class="step-desc">Load the dataset. Inspect image count, class distribution (are there more normal than glaucoma cases?), and image quality. Document any preprocessing decisions and justify your choices.</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">✓</div>
+          <div class="step-body">
+            <div class="step-title">Execution</div>
+            <div class="step-desc">Run your complete detection pipeline independently. Ensure your preprocessing matches what the model expects. Record all outputs — do not cherry-pick results.</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">✓</div>
+          <div class="step-body">
+            <div class="step-title">Evaluation</div>
+            <div class="step-desc">Calculate accuracy, precision, recall, F1, and AUC if possible. Present a confusion matrix. Identify which class performed worse and explain why.</div>
+          </div>
+        </li>
+        <li>
+          <div class="step-num">✓</div>
+          <div class="step-body">
+            <div class="step-title">Interpretation</div>
+            <div class="step-desc">Write a clear, structured interpretation. Summarise model performance, explain key errors, and state what you would do to improve results. Reference clinical context — why does recall matter more than precision here?</div>
+          </div>
+        </li>
+      </ol>
+
+      <table>
+        <tr><th>Competency level</th><th>What it looks like</th></tr>
+        <tr><td>Beginner</td><td>Pipeline runs, basic accuracy reported, limited interpretation of errors</td></tr>
+        <tr><td>Intermediate</td><td>Full evaluation metrics, confusion matrix, structured interpretation with clinical reasoning</td></tr>
+        <tr><td>Advanced</td><td>All above + identifies data quality issues, proposes improvements, critically analyses model limitations</td></tr>
+      </table>
+    </div>
+
+    <!-- SECTION 8: QUIZ PREP -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">08</span>
+        <span class="section-title">Level 1 Quiz Preparation</span>
+      </div>
+
+      <div class="level-badge badge-green">Level 1 · Understand</div>
+      <p>Practise with these representative questions. Answers are revealed — cover them as you work through each question, then check your reasoning.</p>
+
+      <div class="quiz-item">
+        <div class="quiz-q">Q1 — Concept: What is the primary difference between image classification and object detection?</div>
+        <ul class="quiz-options">
+          <li data-opt="A">Classification requires more data than detection</li>
+          <li data-opt="B" class="correct">Classification assigns a label to the whole image; detection also localises the object with a bounding box</li>
+          <li data-opt="C">Detection is only used for medical images</li>
+          <li data-opt="D">They are interchangeable terms</li>
+        </ul>
+        <div class="answer-note">Answer: B — this distinction is foundational. Always link detection to spatial localisation.</div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-q">Q2 — Concept: Which stage of the pipeline converts a raw image into a format the model can process?</div>
+        <ul class="quiz-options">
+          <li data-opt="A">Feature extraction</li>
+          <li data-opt="B">Model inference</li>
+          <li data-opt="C" class="correct">Preprocessing</li>
+          <li data-opt="D">Output interpretation</li>
+        </ul>
+        <div class="answer-note">Answer: C — preprocessing (resizing, normalisation) happens before the model sees the image.</div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-q">Q3 — Scenario: A glaucoma detection model achieves 95% accuracy on a dataset where 95% of images are labelled "normal". Should you trust this result? Why or why not?</div>
+        <ul class="quiz-options">
+          <li data-opt="A">Yes — 95% accuracy is excellent by any standard</li>
+          <li data-opt="B" class="correct">No — a model that always predicts "normal" would also achieve 95% accuracy on this imbalanced dataset</li>
+          <li data-opt="C">No — accuracy above 90% is always suspicious</li>
+          <li data-opt="D">Yes — as long as the dataset is large enough</li>
+        </ul>
+        <div class="answer-note">Answer: B — this is a classic class imbalance trap. Always check recall and F1 alongside accuracy.</div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-q">Q4 — Scenario: Your model predicts glaucoma with a confidence of 0.52. A colleague says this is a reliable positive result. Do you agree?</div>
+        <ul class="quiz-options">
+          <li data-opt="A">Yes — it crossed the 0.5 threshold so it counts as positive</li>
+          <li data-opt="B" class="correct">No — 0.52 is a very low-confidence prediction; this case should be flagged as uncertain and referred for clinical review</li>
+          <li data-opt="C">No — any score below 0.7 should be ignored</li>
+          <li data-opt="D">Yes — the model always performs at stated accuracy</li>
+        </ul>
+        <div class="answer-note">Answer: B — threshold crossing does not imply reliability. Interpret confidence scores in context.</div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-q">Q5 — Reasoning: In a glaucoma screening programme, which metric should you optimise for — precision or recall? Justify your answer.</div>
+        <ul class="quiz-options">
+          <li data-opt="A">Precision — to avoid unnecessary referrals</li>
+          <li data-opt="B" class="correct">Recall — because missing a glaucoma case (false negative) can cause irreversible vision loss, which is a worse outcome than an unnecessary follow-up</li>
+          <li data-opt="C">Accuracy — as it captures both aspects equally</li>
+          <li data-opt="D">F1 — as it balances both metrics</li>
+        </ul>
+        <div class="answer-note">Answer: B — this is a clinical reasoning question. The cost asymmetry (FN >> FP in screening) always favours recall.</div>
+      </div>
+
+      <div class="quiz-item">
+        <div class="quiz-q">Q6 — Reasoning: Why is normalising pixel values an important preprocessing step?</div>
+        <ul class="quiz-options">
+          <li data-opt="A">It makes images look clearer to human reviewers</li>
+          <li data-opt="B">It reduces file size for storage efficiency</li>
+          <li data-opt="C" class="correct">It ensures all input values are on the same scale, preventing features with large pixel values from dominating model learning</li>
+          <li data-opt="D">It converts colour images to greyscale automatically</li>
+        </ul>
+        <div class="answer-note">Answer: C — normalisation is about stable, consistent input for the model. Link it to the model's learning process.</div>
+      </div>
+    </div>
+
+    <!-- SECTION 9: KEY TERMS -->
+    <div class="section">
+      <div class="section-header">
+        <span class="section-num">09</span>
+        <span class="section-title">Key Terms Glossary</span>
+      </div>
+
+      <div class="term-grid">
+        <div class="term"><div class="term-word">AUC-ROC</div><div class="term-def">Area Under the Receiver Operating Characteristic Curve. Measures a model's ability to distinguish between classes across all thresholds.</div></div>
+        <div class="term"><div class="term-word">Bounding box</div><div class="term-def">A rectangle defined by (x, y, width, height) that marks the location of a detected object in an image.</div></div>
+        <div class="term"><div class="term-word">Confidence score</div><div class="term-def">A probability (0–1) indicating how certain the model is about its prediction.</div></div>
+        <div class="term"><div class="term-word">Confusion matrix</div><div class="term-def">A table showing TP, TN, FP, FN counts — the foundation for all classification metrics.</div></div>
+        <div class="term"><div class="term-word">Cup-to-disc ratio</div><div class="term-def">Ratio of optic cup diameter to optic disc diameter. A CDR above 0.6 is a clinical indicator of glaucoma risk.</div></div>
+        <div class="term"><div class="term-word">False negative (FN)</div><div class="term-def">Model predicts negative (normal) but the actual label is positive (glaucoma). The most dangerous error in screening.</div></div>
+        <div class="term"><div class="term-word">False positive (FP)</div><div class="term-def">Model predicts positive (glaucoma) but actual label is negative (normal). Leads to unnecessary follow-up.</div></div>
+        <div class="term"><div class="term-word">Feature extraction</div><div class="term-def">The process by which a model learns to identify meaningful patterns (edges, shapes, textures) from training data.</div></div>
+        <div class="term"><div class="term-word">Fundus image</div><div class="term-def">A photograph of the interior surface of the eye (retina). The standard image type used for glaucoma screening.</div></div>
+        <div class="term"><div class="term-word">Inference</div><div class="term-def">Running a trained model on new data to generate predictions. The model is not learning — it is applying learned weights.</div></div>
+        <div class="term"><div class="term-word">Normalisation</div><div class="term-def">Scaling pixel values from their original range (0–255) to a smaller range (0–1) for stable model input.</div></div>
+        <div class="term"><div class="term-word">Precision</div><div class="term-def">Of all cases predicted positive, how many were actually positive. TP / (TP + FP).</div></div>
+        <div class="term"><div class="term-word">Recall (Sensitivity)</div><div class="term-def">Of all actual positive cases, how many were correctly identified. TP / (TP + FN). Critical in screening.</div></div>
+        <div class="term"><div class="term-word">Threshold</div><div class="term-def">The confidence cutoff used to convert a probability into a class label. Default is 0.5; may be lowered to increase recall.</div></div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span>Computer Vision: Intelligent Detection Systems</span>
+    <span>Study Reference Notes</span>
+  </div>
+</div>
+
+<button class="print-btn" onclick="window.print()">Save as PDF ↓</button>
+
+</body>
+</html>
