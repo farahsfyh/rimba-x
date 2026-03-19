@@ -46,9 +46,8 @@ export async function POST(req: NextRequest) {
   const existing = await supabase.from('career_profiles').select('id, created_at').eq('user_id', user.id).maybeSingle()
   const isNew = !existing.data
 
-  const { data: profile, error } = await supabase
-    .from('career_profiles')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: profile, error } = await (supabase.from('career_profiles') as any)
     .upsert({
       user_id: user.id,
       full_name: d.full_name ? sanitizeInput(d.full_name) : null,
@@ -64,7 +63,7 @@ export async function POST(req: NextRequest) {
       career_goals: d.career_goals ? sanitizeInput(d.career_goals) : null,
       location: sanitizeInput(d.location ?? 'Malaysia'),
       updated_at: new Date().toISOString(),
-    } as any, { onConflict: 'user_id' })
+    }, { onConflict: 'user_id' })
     .select()
     .single()
 
@@ -79,7 +78,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ success: true, profile })
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })

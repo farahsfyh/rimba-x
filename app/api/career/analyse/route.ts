@@ -8,7 +8,7 @@ import { getGeminiModel } from '@/lib/ai/gemini'
 import { awardXP } from '@/lib/gamification'
 import type { CareerProfile } from '@/types'
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
@@ -68,18 +68,18 @@ export async function POST(req: NextRequest) {
   }))
 
   // Save analysis
+  const careerProfile = profile as CareerProfile
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: analysis, error: analysisErr } = await supabase
-    .from('skill_gap_analyses')
+  const { data: analysis, error: analysisErr } = await (supabase.from('skill_gap_analyses') as any)
     .insert({
       user_id: user.id,
-      target_career: (profile as any).target_career,
-      required_skills: gapData.required_skills as any,
-      current_skills: (profile as any).skills,
-      gap_skills: gapData.gap_skills as any,
+      target_career: careerProfile.target_career,
+      required_skills: gapData.required_skills,
+      current_skills: careerProfile.skills,
+      gap_skills: gapData.gap_skills,
       match_score: Math.min(100, Math.max(0, gapData.match_score)),
       ai_summary: gapData.ai_summary,
-    } as any)
+    })
     .select()
     .single()
 
@@ -91,11 +91,10 @@ export async function POST(req: NextRequest) {
   await supabase.from('learning_modules').delete().eq('user_id', user.id)
 
   // Auto-generate learning modules  
-  const moduleDefs = deriveModulesFromGap(user.id, (analysis as any).id, gapData)
-  const { data: modules } = await supabase
-    .from('learning_modules')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    .insert(moduleDefs as any)
+  const moduleDefs = deriveModulesFromGap(user.id, analysis.id, gapData)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: modules } = await (supabase.from('learning_modules') as any)
+    .insert(moduleDefs)
     .select()
 
   // Award XP

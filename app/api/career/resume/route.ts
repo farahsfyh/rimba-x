@@ -79,9 +79,8 @@ export async function POST(req: NextRequest) {
   }
 
   const versionCount = (countRes.count ?? 0) + 1
-  const { data: resume, error: saveErr } = await supabase
-    .from('resume_versions')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: resume, error: saveErr } = await (supabase.from('resume_versions') as any)
     .insert({
       user_id: user.id,
       version_name: version_name ? sanitizeInput(version_name) : `Resume v${versionCount}`,
@@ -89,7 +88,7 @@ export async function POST(req: NextRequest) {
       content_json: contentToStore,
       ai_feedback: improvementTips.join('\n'),
       ats_score: atsScore,
-    } as any)
+    })
     .select()
     .single()
 
@@ -102,7 +101,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ resume, ats_score: atsScore, improvement_tips: improvementTips })
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
