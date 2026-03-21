@@ -1,8 +1,8 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getGeminiModel } from '@/lib/ai/gemini'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
     try {
@@ -39,7 +39,7 @@ Duration in months should be estimated as a number.
 Return ONLY JSON. No other conversational text wrapper.
 `;
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+        const model = getGeminiModel('gemini-2.0-flash')
 
         const pdfPart = {
             inlineData: {

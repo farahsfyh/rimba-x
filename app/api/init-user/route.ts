@@ -3,6 +3,8 @@ import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit, AUTH_LIMIT } from '@/lib/security/rate-limit'
 
+export const runtime = 'nodejs'
+
 export async function POST(request: NextRequest) {
     // Verify user is authenticated
     const supabase = await createClient()

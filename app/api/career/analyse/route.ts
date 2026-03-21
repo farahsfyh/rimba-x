@@ -21,7 +21,13 @@ export async function GET() {
     .limit(1)
     .maybeSingle()
 
-  return NextResponse.json({ data: data ?? null })
+  const { data: profile } = await supabase
+    .from('career_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  return NextResponse.json({ data: data ?? null, hasProfile: !!profile })
 }
 
 export async function POST(req: NextRequest) {

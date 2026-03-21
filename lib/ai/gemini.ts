@@ -1,13 +1,25 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Initialize Gemini AI
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+// Initialize Gemini AI — throw early with a clear message if the key is absent
+const apiKey = process.env.GEMINI_API_KEY;
+if (!apiKey) {
+  throw new Error(
+    'GEMINI_API_KEY environment variable is not set. ' +
+    'Add it to your .env.local (development) or Netlify Environment Variables (production).'
+  );
+}
+const genAI = new GoogleGenerativeAI(apiKey);
 
 /**
- * Get Gemini model instance
+ * Get Gemini model instance.
+ * @param modelName - Defaults to 'gemini-2.0-flash'
+ * @param options.systemInstruction - Optional system prompt passed to the model
  */
-export function getGeminiModel(modelName: string = 'gemini-2.0-flash') {
-  return genAI.getGenerativeModel({ model: modelName });
+export function getGeminiModel(
+  modelName: string = 'gemini-2.0-flash',
+  options?: { systemInstruction?: string }
+) {
+  return genAI.getGenerativeModel({ model: modelName, ...options });
 }
 
 // ─── Tutor Settings ────────────────────────────────────────

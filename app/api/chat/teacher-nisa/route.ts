@@ -1,9 +1,9 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { TEACHER_NISA_PROMPT } from '@/lib/career/prompts'
+import { getGeminiModel } from '@/lib/ai/gemini'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
     try {
@@ -24,10 +24,7 @@ export async function POST(request: NextRequest) {
 
         const systemInstruction = TEACHER_NISA_PROMPT(moduleName, levelName, currentStep, visibleContext)
 
-        const model = genAI.getGenerativeModel({
-            model: 'gemini-2.0-flash',
-            systemInstruction: systemInstruction,
-        })
+        const model = getGeminiModel('gemini-2.0-flash', { systemInstruction: systemInstruction })
 
         const formattedHistory = (history || []).map((msg: any) => ({
             role: msg.role === 'user' ? 'user' : 'model',

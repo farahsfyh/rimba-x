@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit, CHAT_LIMIT } from '@/lib/security/rate-limit'
+import { getGeminiModel } from '@/lib/ai/gemini'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+export const runtime = 'nodejs'
 
 const SYSTEM_PROMPT = `You are the Adaptive Learning Engine for an inclusive education platform serving learners from foundational to advanced levels. 
 
@@ -113,10 +113,7 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
         async start(controller) {
             try {
-                const model = genAI.getGenerativeModel({
-                    model: 'gemini-2.0-flash',
-                    systemInstruction: SYSTEM_PROMPT,
-                })
+                const model = getGeminiModel('gemini-2.0-flash', { systemInstruction: SYSTEM_PROMPT })
 
                 const chat = model.startChat({
                     history: formattedHistory,
